@@ -1,3 +1,4 @@
+vim.env.CC = 'gcc'
 --[[
 
 =====================================================================
@@ -695,7 +696,7 @@ do
     --    https://github.com/pmizio/typescript-tools.nvim
     --
     -- But for many setups, the LSP (`ts_ls`) will work just fine
-    -- ts_ls = {},
+    ts_ls = {},
 
     stylua = {}, -- Used to format Lua code
 
@@ -778,6 +779,11 @@ do
       local enabled_filetypes = {
         -- lua = true,
         -- python = true,
+        typescript = true,
+        javascript = true,
+        typescriptreact = true,
+        javascriptreact = true,
+        json = true,
       }
       if enabled_filetypes[vim.bo[bufnr].filetype] then
         return { timeout_ms = 500 }
@@ -796,6 +802,11 @@ do
       --
       -- You can use 'stop_after_first' to run the first available formatter from the list
       -- javascript = { "prettierd", "prettier", stop_after_first = true },
+      javascript = { 'biome' },
+      typescript = { 'biome' },
+      typescriptreact = { 'biome' },
+      javascriptreact = { 'biome' },
+      json = { 'biome' },
     },
   }
 
@@ -846,7 +857,7 @@ do
       -- <c-k>: Toggle signature help
       --
       -- See `:help blink-cmp-config-keymap` for defining your own keymap
-      preset = 'default',
+      preset = 'enter',
 
       -- For more advanced Luasnip keymaps (e.g. selecting choice nodes, expansion) see:
       --    https://github.com/L3MON4D3/LuaSnip?tab=readme-ov-file#keymaps
@@ -960,17 +971,17 @@ do
   --  Here are some example plugins that I've included in the Kickstart repository.
   --  Uncomment any of the lines below to enable them (you will need to restart nvim).
   --
-  -- require 'kickstart.plugins.debug'
-  -- require 'kickstart.plugins.indent_line'
-  -- require 'kickstart.plugins.lint'
-  -- require 'kickstart.plugins.autopairs'
-  -- require 'kickstart.plugins.neo-tree'
+  require 'kickstart.plugins.debug'
+  require 'kickstart.plugins.indent_line'
+  require 'kickstart.plugins.lint'
+  require 'kickstart.plugins.autopairs'
+  require 'kickstart.plugins.neo-tree'
   -- require 'kickstart.plugins.gitsigns' -- adds gitsigns recommended keymaps
 
   -- NOTE: You can add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
   --
   --  Uncomment the following line and add your plugins to `lua/custom/plugins/*.lua` to get going.
-  -- require 'custom.plugins'
+  require 'custom.plugins'
 end
 
 -- The line beneath this is called `modeline`. See `:help modeline`
