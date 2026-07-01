@@ -372,11 +372,21 @@ do
     -- Document existing key chains
     spec = {
       { '<leader>s', group = '[S]earch', mode = { 'n', 'v' } },
-      { '<leader>t', group = '[T]oggle' },
+      { '<leader>t', group = '[T]erminal / [T]oggle' },
+      { '<leader>d', group = '[D]iagnostics' },
       { '<leader>h', group = 'Git [H]unk', mode = { 'n', 'v' } }, -- Enable gitsigns recommended keymaps first
       { 'gr', group = 'LSP Actions', mode = { 'n' } },
     },
   }
+
+  -- Neogit git interface
+  vim.pack.add {
+    { src = gh 'NeogitOrg/neogit' },
+    { src = gh 'sindrets/diffview.nvim' },
+    { src = gh 'm00qek/baleia.nvim' },
+    { src = gh 'nvim-telescope/telescope.nvim' },
+  }
+  vim.keymap.set('n', '<leader>gg', '<cmd>Neogit<cr>', { desc = 'Open Neogit UI' })
 
   -- [[ Colorscheme ]]
   -- You can easily change to a different colorscheme.
@@ -384,19 +394,11 @@ do
   -- change the command under that to load whatever the name of that colorscheme is.
   --
   -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
-   vim.pack.add { gh 'folke/tokyonight.nvim' }
-  -- ---@diagnostic disable-next-line: missing-fields
-   require('tokyonight').setup {
-     styles = {
-       comments = { italic = false }, -- Disable italics in comments
-     },
-   }
+  vim.pack.add { gh 'bluz71/vim-moonfly-colors' }
 
   --
   -- Load the colorscheme here.
-  -- Like many other themes, this one has different styles, and you could load
-  -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
-  vim.cmd.colorscheme 'tokyonight-moon'
+  vim.cmd.colorscheme 'moonfly'
 
   -- Highlight todo, notes, etc in comments
   vim.pack.add { gh 'folke/todo-comments.nvim' }
@@ -910,10 +912,24 @@ do
 
   -- NOTE: You can also specify a branch or a specific commit
   vim.pack.add { { src = gh 'nvim-treesitter/nvim-treesitter', version = 'main' } }
+  vim.pack.add { { src = gh 'windwp/nvim-ts-autotag' } }
 
   -- Ensure basic parsers are installed
   local parsers = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' }
   require('nvim-treesitter').install(parsers)
+
+  require('nvim-ts-autotag').setup {
+    opts = {
+      enable_close = true,
+      enable_rename = true,
+      enable_close_on_slash = false,
+    },
+    per_filetype = {
+      html = {
+        enable_close = false,
+      },
+    },
+  }
 
   ---@param buf integer
   ---@param language string
