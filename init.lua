@@ -394,11 +394,11 @@ do
   -- change the command under that to load whatever the name of that colorscheme is.
   --
   -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
-  vim.pack.add { gh 'bluz71/vim-moonfly-colors' }
+  vim.pack.add { gh 'folke/tokyonight.nvim' }
 
   --
   -- Load the colorscheme here.
-  vim.cmd.colorscheme 'moonfly'
+  vim.cmd.colorscheme 'tokyonight'
 
   -- Highlight todo, notes, etc in comments
   vim.pack.add { gh 'folke/todo-comments.nvim' }
