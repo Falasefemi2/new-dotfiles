@@ -1,16 +1,29 @@
-vim.pack.add({
-    'https://github.com/nvim-tree/nvim-web-devicons',
-    'https://github.com/nvim-lualine/lualine.nvim',
-    'https://github.com/folke/tokyonight.nvim',
-})
+vim.pack.add { 'https://github.com/nvim-lualine/lualine.nvim' }
 
-vim.cmd.colorscheme('tokyonight-night')
+local function lsp_status()
+  local buf_clients = vim.lsp.get_clients({ bufnr = 0 })
+  if #buf_clients == 0 then
+    return 'No LSP'
+  end
+
+  local client_names = {}
+  for _, client in ipairs(buf_clients) do
+    if client.name ~= 'null-ls' and client.name ~= 'copilot' then
+      table.insert(client_names, client.name)
+    end
+  end
+
+  if #client_names == 0 then
+    return 'LSP'
+  end
+  return '󰒋 ' .. table.concat(client_names, ', ')
+end
 
 require('lualine').setup {
   options = {
     icons_enabled = true,
     theme = 'tokyonight',
-    component_separators = { left = '', right = '' },
+    component_separators = { left = '│', right = '│' },
     section_separators = { left = '', right = '' },
     disabled_filetypes = {
       statusline = { 'neo-tree', 'toggleterm' },
@@ -25,22 +38,23 @@ require('lualine').setup {
     },
   },
   sections = {
-    lualine_a = { 'mode' },
+    lualine_a = { { 'mode', fmt = function(str) return str:sub(1, 1) end } },
     lualine_b = { 'branch' },
     lualine_c = {
+      { 'filename', file_status = true, path = 1 },
       { 'diff', symbols = { added = ' ', modified = ' ', removed = ' ' } },
       {
         'diagnostics',
         symbols = { error = ' ', warn = ' ', info = ' ', hint = ' ' },
         diagnostics_color = {
           error = { fg = '#F7768E' },
-          warn  = { fg = '#E0AF68' },
-          info  = { fg = '#7DCFFF' },
-          hint  = { fg = '#9ECE6A' },
+          warn = { fg = '#E0AF68' },
+          info = { fg = '#7DCFFF' },
+          hint = { fg = '#9ECE6A' },
         },
       },
     },
-    lualine_x = { 'filetype' },
+    lualine_x = { lsp_status, 'encoding', 'filetype' },
     lualine_y = { 'progress' },
     lualine_z = { 'location' },
   },
@@ -52,5 +66,5 @@ require('lualine').setup {
     lualine_y = {},
     lualine_z = {},
   },
-  extensions = { 'neo-tree', 'toggleterm', 'lazy' },
+  extensions = { 'neo-tree', 'toggleterm' },
 }

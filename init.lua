@@ -187,12 +187,8 @@ do
     severity_sort = true,
     float = { border = 'rounded', source = 'if_many' },
     underline = { severity = { min = vim.diagnostic.severity.WARN } },
-
-    -- Can switch between these as you prefer
-    virtual_text = true, -- Text shows up at the end of the line
-    virtual_lines = false, -- Text shows up underneath the line, with virtual lines
-
-    -- Auto open the float, so you can easily read the errors when jumping with `[d` and `]d`
+    virtual_text = true,
+    virtual_lines = false,
     jump = {
       on_jump = function(_, bufnr)
         vim.diagnostic.open_float {
@@ -204,47 +200,87 @@ do
     },
   }
 
+  -- Define diagnostic icons in sign column
+  local diag_signs = { Error = '󰅚 ', Warn = '󰀦 ', Hint = '󰌶 ', Info = '󰋽 ' }
+  for type, icon in pairs(diag_signs) do
+    local hl = 'DiagnosticSign' .. type
+    vim.fn.sign_define(hl, { text = icon, texthl = hl, numhl = hl })
+  end
+
   vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
 
-  -- Exit terminal mode in the builtin terminal with a shortcut that is a bit easier
-  -- for people to discover. Otherwise, you normally need to press <C-\><C-n>, which
-  -- is not what someone will guess without a bit more experience.
-  --
-  -- NOTE: This won't work in all terminal emulators/tmux/etc. Try your own mapping
-  -- or just use <C-\><C-n> to exit terminal mode
+  -- Exit terminal mode in the builtin terminal
   vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' })
 
-  -- TIP: Disable arrow keys in normal mode
-  -- vim.keymap.set('n', '<left>', '<cmd>echo "Use h to move!!"<CR>')
-  -- vim.keymap.set('n', '<right>', '<cmd>echo "Use l to move!!"<CR>')
-  -- vim.keymap.set('n', '<up>', '<cmd>echo "Use k to move!!"<CR>')
-  -- vim.keymap.set('n', '<down>', '<cmd>echo "Use j to move!!"<CR>')
-
-  -- Keybinds to make split navigation easier.
-  --  Use CTRL+<hjkl> to switch between windows
-  --
-  --  See `:help wincmd` for a list of all window commands
+  -- Keybinds to make split navigation easier
   vim.keymap.set('n', '<C-h>', '<C-w><C-h>', { desc = 'Move focus to the left window' })
   vim.keymap.set('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right window' })
   vim.keymap.set('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
   vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
 
-  -- NOTE: Some terminals have colliding keymaps or are not able to send distinct keycodes
-  -- vim.keymap.set("n", "<C-S-h>", "<C-w>H", { desc = "Move window to the left" })
-  -- vim.keymap.set("n", "<C-S-l>", "<C-w>L", { desc = "Move window to the right" })
-  -- vim.keymap.set("n", "<C-S-j>", "<C-w>J", { desc = "Move window to the lower" })
-  -- vim.keymap.set("n", "<C-S-k>", "<C-w>K", { desc = "Move window to the upper" })
+  -- Window Resizing Keymaps
+  vim.keymap.set('n', '<C-Up>', '<cmd>resize +2<CR>', { desc = 'Increase Window Height' })
+  vim.keymap.set('n', '<C-Down>', '<cmd>resize -2<CR>', { desc = 'Decrease Window Height' })
+  vim.keymap.set('n', '<C-Left>', '<cmd>vertical resize -2<CR>', { desc = 'Decrease Window Width' })
+  vim.keymap.set('n', '<C-Right>', '<cmd>vertical resize +2<CR>', { desc = 'Increase Window Width' })
+
+  -- Buffer Navigation & Management Keymaps
+  vim.keymap.set('n', '[b', '<cmd>bprevious<CR>', { desc = 'Previous Buffer' })
+  vim.keymap.set('n', ']b', '<cmd>bnext<CR>', { desc = 'Next Buffer' })
+  vim.keymap.set('n', '<leader>bd', function()
+    local bd = require('mini.bufremove').delete
+    if vim.bo.modified then
+      local choice = vim.fn.confirm(('Save changes to %q?'):format(vim.fn.bufname()), '&Yes\n&No\n&Cancel')
+      if choice == 1 then
+        vim.cmd.write()
+        bd(0, false)
+      elseif choice == 2 then
+        bd(0, true)
+      end
+    else
+      bd(0, false)
+    end
+  end, { desc = '[B]uffer [D]elete' })
 
   -- [[ Basic Autocommands ]]
-  --  See `:help lua-guide-autocommands`
-
   -- Highlight when yanking (copying) text
-  --  Try it with `yap` in normal mode
-  --  See `:help vim.hl.on_yank()`
   vim.api.nvim_create_autocmd('TextYankPost', {
     desc = 'Highlight when yanking (copying) text',
     group = vim.api.nvim_create_augroup('kickstart-highlight-yank', { clear = true }),
     callback = function() vim.hl.on_yank() end,
+  })
+
+  -- Auto-create parent directories when saving a file
+  vim.api.nvim_create_autocmd('BufWritePre', {
+    desc = 'Auto-create parent directories when saving',
+    group = vim.api.nvim_create_augroup('kickstart-auto-create-dir', { clear = true }),
+    callback = function(event)
+      if event.match:match '^%w%w+:[\\/][\\/]' then return end
+      local file = vim.uv.fs_realpath(event.match) or event.match
+      vim.fn.mkdir(vim.fn.fnamemodify(file, ':h'), 'p')
+    end,
+  })
+
+  -- Resize splits automatically when window is resized
+  vim.api.nvim_create_autocmd('VimResized', {
+    desc = 'Equalize splits on window resize',
+    group = vim.api.nvim_create_augroup('kickstart-resize-splits', { clear = true }),
+    callback = function()
+      local current_tab = vim.fn.tabpagenr()
+      vim.cmd 'tabdo wincmd ='
+      vim.cmd('tabnext ' .. current_tab)
+    end,
+  })
+
+  -- Close utility/help/quickfix windows with 'q'
+  vim.api.nvim_create_autocmd('FileType', {
+    desc = 'Close utility windows with q',
+    group = vim.api.nvim_create_augroup('kickstart-close-with-q', { clear = true }),
+    pattern = { 'help', 'lspinfo', 'man', 'notify', 'qf', 'query', 'spectre_panel' },
+    callback = function(event)
+      vim.bo[event.buf].buflisted = false
+      vim.keymap.set('n', 'q', '<cmd>close<CR>', { buffer = event.buf, silent = true, desc = 'Close buffer' })
+    end,
   })
 end
 
@@ -348,20 +384,7 @@ do
   -- since otherwise the icons won't display properly.
   if vim.g.have_nerd_font then vim.pack.add { gh 'nvim-tree/nvim-web-devicons' } end
 
-  -- Here is a more advanced configuration example that passes options to `gitsigns.nvim`
-  --
-  -- See `:help gitsigns` to understand what each configuration key does.
-  -- Adds git related signs to the gutter, as well as utilities for managing changes
-  vim.pack.add { gh 'lewis6991/gitsigns.nvim' }
-  require('gitsigns').setup {
-    signs = {
-      add = { text = '+' }, ---@diagnostic disable-line: missing-fields
-      change = { text = '~' }, ---@diagnostic disable-line: missing-fields
-      delete = { text = '_' }, ---@diagnostic disable-line: missing-fields
-      topdelete = { text = '‾' }, ---@diagnostic disable-line: missing-fields
-      changedelete = { text = '~' }, ---@diagnostic disable-line: missing-fields
-    },
-  }
+  -- Gitsigns is configured in kickstart.plugins.gitsigns
 
   -- Useful plugin to show you pending keybinds.
   vim.pack.add { gh 'folke/which-key.nvim' }
@@ -801,17 +824,15 @@ do
     },
     -- You can also specify external formatters in here.
     formatters_by_ft = {
-      -- rust = { 'rustfmt' },
-      -- Conform can also run multiple formatters sequentially
-      -- python = { "isort", "black" },
-      --
-      -- You can use 'stop_after_first' to run the first available formatter from the list
-      -- javascript = { "prettierd", "prettier", stop_after_first = true },
-      javascript = { 'biome' },
-      typescript = { 'biome' },
-      typescriptreact = { 'biome' },
-      javascriptreact = { 'biome' },
-      json = { 'biome' },
+      lua = { 'stylua' },
+      javascript = { 'biome', 'prettierd', 'prettier', stop_after_first = true },
+      typescript = { 'biome', 'prettierd', 'prettier', stop_after_first = true },
+      typescriptreact = { 'biome', 'prettierd', 'prettier', stop_after_first = true },
+      javascriptreact = { 'biome', 'prettierd', 'prettier', stop_after_first = true },
+      json = { 'biome', 'prettierd', 'prettier', stop_after_first = true },
+      html = { 'prettierd', 'prettier', stop_after_first = true },
+      css = { 'prettierd', 'prettier', stop_after_first = true },
+      markdown = { 'prettierd', 'prettier', stop_after_first = true },
     },
   }
 
