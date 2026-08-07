@@ -9,6 +9,17 @@ require('gitsigns').setup {
     topdelete = { text = '‾' },
     changedelete = { text = '~' },
   },
+  signcolumn = true,
+  signs_staged_enable = true,
+  attach_to_untracked = true,
+  current_line_blame = true,
+  current_line_blame_opts = {
+    virt_text = true,
+    virt_text_pos = 'eol',
+    delay = 300,
+    ignore_whitespace = false,
+  },
+  current_line_blame_formatter = '   <author>, <author_time:%Y-%m-%d> - <summary>',
   on_attach = function(bufnr)
     local gitsigns = require 'gitsigns'
 

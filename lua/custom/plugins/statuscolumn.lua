@@ -7,6 +7,10 @@ require('statuscoolumn').setup {
     type = 'hybrid',
   },
 
+  git = {
+    enabled = true,
+  },
+
   border = {
     enabled = true,
     text = '│',

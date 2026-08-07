@@ -131,6 +131,9 @@ do
   -- Enable undo/redo changes even after closing and reopening a file
   vim.o.undofile = true
 
+  -- Disable swapfiles (prevents W325 warnings from stale process swap files)
+  vim.o.swapfile = false
+
   -- Case-insensitive searching UNLESS \C or one or more capital letters in the search term
   vim.o.ignorecase = true
   vim.o.smartcase = true
@@ -715,7 +718,29 @@ do
   local servers = {
     -- clangd = {},
     gopls = {},
-    -- pyright = {},
+    pyright = {
+      before_init = function(_, config)
+        local ok, py = pcall(require, 'custom.plugins.python')
+        if ok and py and py.find_python_venv then
+          local path = py.find_python_venv(config.root_dir)
+          if path then
+            config.settings = vim.tbl_deep_extend('force', config.settings or {}, {
+              python = { pythonPath = path },
+            })
+          end
+        end
+      end,
+      settings = {
+        python = {
+          analysis = {
+            autoSearchPaths = true,
+            useLibraryCodeForTypes = true,
+            diagnosticMode = 'openFilesOnly',
+          },
+        },
+      },
+    },
+    ruff = {},
     -- rust_analyzer = {},
     --
     -- Some languages (like typescript) have entire language plugins that can be useful:
@@ -782,7 +807,9 @@ do
   -- You can press `g?` for help in this menu.
   local ensure_installed = vim.tbl_keys(servers or {})
   vim.list_extend(ensure_installed, {
-    -- You can add other tools here that you want Mason to install
+    'black',
+    'isort',
+    'debugpy',
   })
 
   require('mason-tool-installer').setup { ensure_installed = ensure_installed }
@@ -806,7 +833,7 @@ do
       -- You can specify filetypes to autoformat on save here:
       local enabled_filetypes = {
         -- lua = true,
-        -- python = true,
+        python = true,
         typescript = true,
         javascript = true,
         typescriptreact = true,
@@ -825,6 +852,7 @@ do
     -- You can also specify external formatters in here.
     formatters_by_ft = {
       lua = { 'stylua' },
+      python = { 'ruff_format', 'isort', 'black', stop_after_first = true },
       javascript = { 'biome', 'prettierd', 'prettier', stop_after_first = true },
       typescript = { 'biome', 'prettierd', 'prettier', stop_after_first = true },
       typescriptreact = { 'biome', 'prettierd', 'prettier', stop_after_first = true },
@@ -849,14 +877,9 @@ do
   -- NOTE: You can also specify plugin using a version range for its git tag.
   --  See `:help vim.version.range()` for more info
   vim.pack.add { { src = gh 'L3MON4D3/LuaSnip', version = vim.version.range '2.*' } }
+  vim.pack.add { gh 'rafamadriz/friendly-snippets' }
   require('luasnip').setup {}
-
-  -- `friendly-snippets` contains a variety of premade snippets.
-  --    See the README about individual language/framework/plugin snippets:
-  --    https://github.com/rafamadriz/friendly-snippets
-  --
-  -- vim.pack.add { gh 'rafamadriz/friendly-snippets' }
-  -- require('luasnip.loaders.from_vscode').lazy_load()
+  require('luasnip.loaders.from_vscode').lazy_load()
 
   -- [[ Autocomplete Engine ]]
   vim.pack.add { { src = gh 'saghen/blink.cmp', version = vim.version.range '1.*' } }
@@ -936,8 +959,19 @@ do
   vim.pack.add { { src = gh 'windwp/nvim-ts-autotag' } }
 
   -- Ensure basic parsers are installed
-  local parsers = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' }
-  require('nvim-treesitter').install(parsers)
+  local parsers = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'python', 'query', 'vim', 'vimdoc' }
+  local installed_base = require('nvim-treesitter').get_installed 'parsers'
+  local missing_base = {}
+  for _, p in ipairs(parsers) do
+    if not vim.tbl_contains(installed_base, p) then
+      table.insert(missing_base, p)
+    end
+  end
+  if #missing_base > 0 then
+    pcall(function()
+      require('nvim-treesitter').install(missing_base)
+    end)
+  end
 
   require('nvim-ts-autotag').setup {
     opts = {
@@ -974,6 +1008,7 @@ do
   end
 
   local available_parsers = require('nvim-treesitter').get_available()
+  local attempted_installs = {}
   vim.api.nvim_create_autocmd('FileType', {
     callback = function(args)
       local buf, filetype = args.buf, args.match
@@ -986,9 +1021,15 @@ do
       if vim.tbl_contains(installed_parsers, language) then
         -- Enable the parser if it is already installed
         treesitter_try_attach(buf, language)
-      elseif vim.tbl_contains(available_parsers, language) then
+      elseif vim.tbl_contains(available_parsers, language) and not attempted_installs[language] then
+        attempted_installs[language] = true
         -- If a parser is available in `nvim-treesitter`, auto-install it and enable it after the installation is done
-        require('nvim-treesitter').install(language):await(function() treesitter_try_attach(buf, language) end)
+        pcall(function()
+          local res = require('nvim-treesitter').install(language)
+          if res and type(res.await) == 'function' then
+            res:await(function() treesitter_try_attach(buf, language) end)
+          end
+        end)
       else
         -- Try to enable treesitter features in case the parser exists but is not available from `nvim-treesitter`
         treesitter_try_attach(buf, language)
