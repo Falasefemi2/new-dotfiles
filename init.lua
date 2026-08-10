@@ -402,6 +402,10 @@ do
       { '<leader>d', group = '[D]iagnostics' },
       { '<leader>h', group = 'Git [H]unk', mode = { 'n', 'v' } }, -- Enable gitsigns recommended keymaps first
       { 'gr', group = 'LSP Actions', mode = { 'n' } },
+      { '<leader>g', group = '[G]o / [G]it' },
+      { '<leader>x', group = 'Trouble' },
+      { '<leader>c', group = '[C]ode' },
+      { '<leader>b', group = '[B]uffer' },
     },
   }
 
@@ -708,6 +712,15 @@ do
       if client and client:supports_method('textDocument/inlayHint', event.buf) then
         map('<leader>th', function() vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled { bufnr = event.buf }) end, '[T]oggle Inlay [H]ints')
       end
+
+      -- Enable codelens refresh for servers that support it (e.g. gopls)
+      if client and client:supports_method('textDocument/codeLens', event.buf) then
+        vim.api.nvim_create_autocmd({ 'BufEnter', 'CursorHold', 'InsertLeave' }, {
+          buffer = event.buf,
+          callback = function() vim.lsp.codelens.enable(true, { bufnr = event.buf }) end,
+        })
+        map('<leader>cl', vim.lsp.codelens.run, '[C]ode [L]ens Run')
+      end
     end,
   })
 
@@ -717,7 +730,44 @@ do
   ---@type table<string, vim.lsp.Config>
   local servers = {
     -- clangd = {},
-    gopls = {},
+    gopls = {
+      settings = {
+        gopls = {
+          gofumpt = true,
+          codelenses = {
+            gc_details = false,
+            generate = true,
+            regenerate_cgo = true,
+            run_govulncheck = true,
+            test = true,
+            tidy = true,
+            upgrade_dependency = true,
+            vendor = true,
+          },
+          hints = {
+            assignVariableTypes = true,
+            compositeLiteralFields = true,
+            compositeLiteralTypes = true,
+            constantValues = true,
+            functionTypeParameters = true,
+            parameterNames = true,
+            rangeVariableTypes = true,
+          },
+          analyses = {
+            fieldalignment = true,
+            nilness = true,
+            unusedparams = true,
+            unusedwrite = true,
+            useany = true,
+          },
+          usePlaceholders = true,
+          completeUnimported = true,
+          staticcheck = true,
+          directoryFilters = { '-.git', '-.vscode', '-.idea', '-.venv', '-node_modules' },
+          semanticTokens = true,
+        },
+      },
+    },
     pyright = {
       before_init = function(_, config)
         local ok, py = pcall(require, 'custom.plugins.python')
@@ -810,6 +860,11 @@ do
     'black',
     'isort',
     'debugpy',
+    -- Go tools
+    'gofumpt',
+    'goimports',
+    'golines',
+    'golangci-lint',
   })
 
   require('mason-tool-installer').setup { ensure_installed = ensure_installed }
@@ -834,6 +889,7 @@ do
       local enabled_filetypes = {
         -- lua = true,
         python = true,
+        go = true,
         typescript = true,
         javascript = true,
         typescriptreact = true,
@@ -852,6 +908,7 @@ do
     -- You can also specify external formatters in here.
     formatters_by_ft = {
       lua = { 'stylua' },
+      go = { 'goimports', 'gofumpt' },
       python = { 'ruff_format', 'isort', 'black', stop_after_first = true },
       javascript = { 'biome', 'prettierd', 'prettier', stop_after_first = true },
       typescript = { 'biome', 'prettierd', 'prettier', stop_after_first = true },
@@ -925,7 +982,7 @@ do
     },
 
     sources = {
-      default = { 'lsp', 'path', 'snippets' },
+      default = { 'lsp', 'path', 'snippets', 'buffer' },
     },
 
     snippets = { preset = 'luasnip' },
@@ -959,7 +1016,21 @@ do
   vim.pack.add { { src = gh 'windwp/nvim-ts-autotag' } }
 
   -- Ensure basic parsers are installed
-  local parsers = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'python', 'query', 'vim', 'vimdoc' }
+  local parsers = {
+    'bash', 'c', 'diff', 'html', 'lua', 'luadoc',
+    'markdown', 'markdown_inline', 'python', 'query', 'vim', 'vimdoc',
+    -- Go
+    'go', 'gomod', 'gosum', 'gowork',
+    -- JS/TS
+    'javascript', 'typescript', 'tsx', 'jsdoc',
+    -- Data formats
+    'json', 'jsonc', 'yaml', 'toml',
+    -- Web
+    'css', 'scss',
+    -- Infra & misc
+    'dockerfile', 'sql', 'regex',
+    'git_config', 'gitignore',
+  }
   local installed_base = require('nvim-treesitter').get_installed 'parsers'
   local missing_base = {}
   for _, p in ipairs(parsers) do

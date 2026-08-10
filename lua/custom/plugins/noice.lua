@@ -6,8 +6,7 @@ require('noice').setup {
   lsp = {
     override = {
       ['vim.lsp.util.convert_input_to_markdown_lines'] = true,
-      ['vim.lsp.util.set_styled_caption'] = true,
-      ['cmp.entry.get_documentation'] = true,
+      ['vim.lsp.util.stylize_markdown'] = true,
     },
   },
   presets = {
