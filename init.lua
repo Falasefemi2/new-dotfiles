@@ -406,6 +406,7 @@ do
       { '<leader>x', group = 'Trouble' },
       { '<leader>c', group = '[C]ode' },
       { '<leader>b', group = '[B]uffer' },
+      { '<leader>r', group = '[R]eplace', mode = { 'n', 'x' } },
     },
   }
 
