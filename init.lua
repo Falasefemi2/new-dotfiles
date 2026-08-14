@@ -897,7 +897,7 @@ do
         json = true,
       }
       if enabled_filetypes[vim.bo[bufnr].filetype] then
-        return { timeout_ms = 500 }
+        return { timeout_ms = 3000 }
       else
         return nil
       end
@@ -910,11 +910,11 @@ do
       lua = { 'stylua' },
       go = { 'goimports', 'gofumpt' },
       python = { 'ruff_format', 'isort', 'black', stop_after_first = true },
-      javascript = { 'biome', 'prettierd', 'prettier', stop_after_first = true },
-      typescript = { 'biome', 'prettierd', 'prettier', stop_after_first = true },
-      typescriptreact = { 'biome', 'prettierd', 'prettier', stop_after_first = true },
-      javascriptreact = { 'biome', 'prettierd', 'prettier', stop_after_first = true },
-      json = { 'biome', 'prettierd', 'prettier', stop_after_first = true },
+      javascript = { 'biome' },
+      typescript = { 'biome' },
+      typescriptreact = { 'biome' },
+      javascriptreact = { 'biome' },
+      json = { 'biome' },
       html = { 'prettierd', 'prettier', stop_after_first = true },
       css = { 'prettierd', 'prettier', stop_after_first = true },
       markdown = { 'prettierd', 'prettier', stop_after_first = true },
