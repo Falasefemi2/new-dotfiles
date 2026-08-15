@@ -798,7 +798,7 @@ do
     --    https://github.com/pmizio/typescript-tools.nvim
     --
     -- But for many setups, the LSP (`ts_ls`) will work just fine
-    ts_ls = {},
+    -- ts_ls = {}, -- Disabled: using effect_tsgo instead (see lua/custom/plugins/effect-tsgo.lua)
 
     tailwindcss = {},
 
