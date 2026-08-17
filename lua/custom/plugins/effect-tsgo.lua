@@ -112,14 +112,15 @@ vim.lsp.config('effect_tsgo', {
 
 vim.lsp.enable('effect_tsgo')
 
--- Disable ts_ls to avoid duplicate diagnostics (effect_tsgo is the superset)
-pcall(vim.lsp.disable, 'ts_ls')
+-- Only disable ts_ls when effect_tsgo attaches to the same buffer
 vim.api.nvim_create_autocmd('LspAttach', {
-  group = vim.api.nvim_create_augroup('disable-ts-ls', { clear = true }),
+  group = vim.api.nvim_create_augroup('effect-tsgo-override', { clear = true }),
   callback = function(args)
     local client = vim.lsp.get_client_by_id(args.data.client_id)
-    if client and client.name == 'ts_ls' then
-      vim.lsp.stop_client(client.id)
+    if client and client.name == 'effect_tsgo' then
+      for _, c in pairs(vim.lsp.get_clients({ name = 'ts_ls', bufnr = args.buf })) do
+        c:stop()
+      end
     end
   end,
 })
@@ -142,7 +143,7 @@ end, { desc = 'Show effect_tsgo LSP info' })
 
 vim.api.nvim_create_user_command('EffectTsgoRestart', function()
   for _, client in pairs(vim.lsp.get_clients({ name = 'effect_tsgo' })) do
-    vim.lsp.stop_client(client.id)
+    client:stop()
   end
   vim.defer_fn(function()
     vim.cmd('edit')

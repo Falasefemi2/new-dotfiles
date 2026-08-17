@@ -7,6 +7,10 @@ lint.linters_by_ft = {
   markdown = { 'markdownlint' }, -- Make sure to install `markdownlint` via mason / npm
   python = { 'ruff' },
   go = { 'golangci_lint' },
+  javascript = { 'oxlint' },
+  javascriptreact = { 'oxlint' },
+  typescript = { 'oxlint' },
+  typescriptreact = { 'oxlint' },
 }
 
 -- To allow other plugins to add linters to require('lint').linters_by_ft,

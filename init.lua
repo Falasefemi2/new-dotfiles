@@ -798,7 +798,7 @@ do
     --    https://github.com/pmizio/typescript-tools.nvim
     --
     -- But for many setups, the LSP (`ts_ls`) will work just fine
-    -- ts_ls = {}, -- Disabled: using effect_tsgo instead (see lua/custom/plugins/effect-tsgo.lua)
+    ts_ls = {}, -- Fallback for non-Effect TS projects (see lua/custom/plugins/effect-tsgo.lua)
 
     tailwindcss = {},
 
@@ -883,6 +883,20 @@ end
 do
   -- [[ Formatting ]]
   vim.pack.add { gh 'stevearc/conform.nvim' }
+
+  -- Use biome when the project has a biome.json/biome.jsonc, otherwise prettier.
+  -- This avoids diff churn in biome-managed repos (easyrent, learning/effect-ts, ...).
+  local function has_biome(bufnr)
+    local root = vim.fs.root(bufnr, { 'package.json', '.git' })
+    return root ~= nil and #vim.fs.find({ 'biome.json', 'biome.jsonc' }, { path = root, upward = true }) > 0
+  end
+  local function js_formatters(bufnr)
+    if has_biome(bufnr) then
+      return { 'biome' }
+    end
+    return { 'prettierd', 'prettier', stop_after_first = true }
+  end
+
   require('conform').setup {
     notify_on_error = false,
     format_on_save = function(bufnr)
@@ -911,11 +925,11 @@ do
       lua = { 'stylua' },
       go = { 'goimports', 'gofumpt' },
       python = { 'ruff_format', 'isort', 'black', stop_after_first = true },
-      javascript = { 'biome' },
-      typescript = { 'biome' },
-      typescriptreact = { 'biome' },
-      javascriptreact = { 'biome' },
-      json = { 'biome' },
+      javascript = js_formatters,
+      typescript = js_formatters,
+      typescriptreact = js_formatters,
+      javascriptreact = js_formatters,
+      json = js_formatters,
       html = { 'prettierd', 'prettier', stop_after_first = true },
       css = { 'prettierd', 'prettier', stop_after_first = true },
       markdown = { 'prettierd', 'prettier', stop_after_first = true },
