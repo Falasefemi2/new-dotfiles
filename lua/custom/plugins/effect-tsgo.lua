@@ -112,13 +112,41 @@ vim.lsp.config('effect_tsgo', {
 
 vim.lsp.enable('effect_tsgo')
 
--- Only disable ts_ls when effect_tsgo attaches to the same buffer
+-- ts_ls must never start in Effect projects: those are served only by
+-- effect_tsgo. Refuse to start (do not call on_dir) when the @effect/tsgo
+-- binary is present in the project root, so ts_ls is never created at all.
+local ts_ls_cfg = vim.lsp.config['ts_ls']
+local ts_ls_orig_root_dir = ts_ls_cfg and ts_ls_cfg.root_dir
+vim.lsp.config('ts_ls', {
+  root_dir = function(bufnr, on_dir)
+    local root = vim.fs.root(bufnr, { 'tsconfig.json', 'jsconfig.json', 'package.json', 'bun.lock' })
+    if root and find_effect_tsgo_exe(root) then
+      vim.notify_once(
+        'ts_ls: @effect/tsgo detected in ' .. root .. '; using effect_tsgo',
+        vim.log.levels.WARN
+      )
+      return
+    end
+    if ts_ls_orig_root_dir then
+      return ts_ls_orig_root_dir(bufnr, on_dir)
+    end
+    on_dir(root or vim.fn.getcwd())
+  end,
+})
+
+-- Safety net: whichever server attaches second, ts_ls must yield whenever a
+-- buffer is served by effect_tsgo (covers attach-order races).
 vim.api.nvim_create_autocmd('LspAttach', {
   group = vim.api.nvim_create_augroup('effect-tsgo-override', { clear = true }),
   callback = function(args)
-    local client = vim.lsp.get_client_by_id(args.data.client_id)
-    if client and client.name == 'effect_tsgo' then
-      for _, c in pairs(vim.lsp.get_clients({ name = 'ts_ls', bufnr = args.buf })) do
+    local has_effect = false
+    local ts_clients = {}
+    for _, c in pairs(vim.lsp.get_clients({ bufnr = args.buf })) do
+      if c.name == 'effect_tsgo' then has_effect = true end
+      if c.name == 'ts_ls' then table.insert(ts_clients, c) end
+    end
+    if has_effect then
+      for _, c in ipairs(ts_clients) do
         c:stop()
       end
     end
