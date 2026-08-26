@@ -58,10 +58,12 @@ vim.lsp.config('effect_tsgo', {
   end,
   settings = {
     typescript = {
+      -- Verbose: mirrors Go's `err: error` for TS - shows all inferred types
+      -- Toggle off with <leader>th (same as Go)
       inlayHints = {
-        parameterNames = { enabled = 'literals', suppressWhenArgumentMatchesName = true },
+        parameterNames = { enabled = 'all', suppressWhenArgumentMatchesName = false },
         parameterTypes = { enabled = true },
-        variableTypes = { enabled = true },
+        variableTypes = { enabled = true, suppressWhenTypeMatchesName = false },
         propertyDeclarationTypes = { enabled = true },
         functionLikeReturnTypes = { enabled = true },
         enumMemberValues = { enabled = true },
