@@ -88,8 +88,10 @@ for type, icon in pairs(breakpoint_icons) do
 end
 
 dap.listeners.after.event_initialized['dapui_config'] = dapui.open
-dap.listeners.before.event_terminated['dapui_config'] = dapui.close
-dap.listeners.before.event_exited['dapui_config'] = dapui.close
+-- Keep UI open after program exits so panic/error stays visible
+-- Close manually with <leader>du or <F7> - previously auto-closed here:
+-- dap.listeners.before.event_terminated['dapui_config'] = dapui.close
+-- dap.listeners.before.event_exited['dapui_config'] = dapui.close
 
 -- Golang (delve) - via nvim-dap-go
 -- On Windows avoid dlv.CMD wrapper (slow, causes "adapter didn't respond")
