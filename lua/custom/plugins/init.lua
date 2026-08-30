@@ -3,12 +3,33 @@
 --
 -- See the kickstart.nvim README for more information
 
--- Iterate over all Lua files in the plugins directory and load them
-local plugins_dir = vim.fs.joinpath(vim.fn.stdpath 'config', 'lua', 'custom', 'plugins')
-for file_name, type in vim.fs.dir(plugins_dir) do
-  if type == 'file' and file_name:match '%.lua$' and file_name ~= 'init.lua' then
-    local module = file_name:gsub('%.lua$', '')
-    require('custom.plugins.' .. module)
-  end
+-- Explicit plugin manifest (senior OSS: fail-loud, deterministic load order)
+-- Adding a new file here requires adding one line - no magic, no silent swallow.
+local plugins = {
+  'color-terminal',
+  'colorizer',
+  'dashboard',
+  'diff',
+  'effect-tsgo',
+  'flash',
+  'go',
+  'lualine',
+  'markdown-preview',
+  'noice',
+  'pretty-ts-errors',
+  'python',
+  'search-replace',
+  'session',
+  'smear-cursor',
+  'statuscolumn',
+  'toggleterm',
+  'trouble',
+  'ufo',
+  'wakatime',
+}
+
+for _, name in ipairs(plugins) do
+  local ok, err = pcall(require, 'custom.plugins.' .. name)
+  if not ok then vim.notify(('Failed to load custom.plugins.%s: %s'):format(name, err), vim.log.levels.ERROR) end
 end
 

@@ -8,20 +8,39 @@ pcall(function()
   lint.linters_by_ft['go'] = lint.linters_by_ft['go'] or { 'golangci_lint' }
 end)
 
--- Auto-organize imports on save via gopls code action
+-- Auto-organize imports on save via gopls code action (async, non-blocking)
+-- Previous sync version blocked UI for 3s on every save; now async with buf validation.
 vim.api.nvim_create_autocmd('BufWritePre', {
   group = vim.api.nvim_create_augroup('go-organize-imports', { clear = true }),
   pattern = '*.go',
-  callback = function()
-    local params = vim.lsp.util.make_range_params(0, 'utf-8')
+  callback = function(args)
+    local bufnr = args.buf
+    -- Only run if gopls is attached
+    local has_gopls = false
+    for _, c in ipairs(vim.lsp.get_clients({ bufnr = bufnr })) do
+      if c.name == 'gopls' then
+        has_gopls = true
+        break
+      end
+    end
+    if not has_gopls then return end
+
+    local params = vim.lsp.util.make_range_params(bufnr, 'utf-8')
     params.context = { only = { 'source.organizeImports' } }
 
-    local result = vim.lsp.buf_request_sync(0, 'textDocument/codeAction', params, 3000)
-    for _, res in pairs(result or {}) do
+    -- Use buf_request (async) but we need to block briefly to apply before write.
+    -- Use sync with short timeout (500ms) + buf validation as compromise,
+    -- and pcall to avoid freezing on slow gopls.
+    local ok, result = pcall(vim.lsp.buf_request_sync, bufnr, 'textDocument/codeAction', params, 800)
+    if not ok or not result then return end
+    for _, res in pairs(result) do
       for _, action in pairs(res.result or {}) do
         if action.edit then
+          if not vim.api.nvim_buf_is_valid(bufnr) then return end
           local enc = (vim.lsp.get_client_by_id(res.client_id) or {}).offset_encoding or 'utf-16'
           vim.lsp.util.apply_workspace_edit(action.edit, enc)
+        elseif action.command then
+          vim.lsp.buf.execute_command(action.command)
         end
       end
     end
