@@ -25,7 +25,10 @@ vim.api.nvim_create_autocmd('BufWritePre', {
     end
     if not has_gopls then return end
 
-    local params = vim.lsp.util.make_range_params(bufnr, 'utf-8')
+    local win = vim.fn.bufwinid(bufnr)
+    if win == -1 then win = 0 end
+    local ok_params, params = pcall(vim.lsp.util.make_range_params, win, 'utf-8')
+    if not ok_params or not params then return end
     params.context = { only = { 'source.organizeImports' } }
 
     -- Use buf_request (async) but we need to block briefly to apply before write.
