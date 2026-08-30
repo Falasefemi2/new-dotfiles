@@ -13,7 +13,7 @@ vim.api.nvim_create_autocmd('BufWritePre', {
   desc = 'Auto-create parent directories when saving',
   group = vim.api.nvim_create_augroup('kickstart-auto-create-dir', { clear = true }),
   callback = function(event)
-    if event.match:match('^%w%w+:[\\/][\\/]') then return end
+    if event.match:match '^%w%w+:[\\/][\\/]' then return end
     local file = vim.uv.fs_realpath(event.match) or event.match
     vim.fn.mkdir(vim.fn.fnamemodify(file, ':h'), 'p')
   end,
@@ -25,7 +25,7 @@ vim.api.nvim_create_autocmd('VimResized', {
   group = vim.api.nvim_create_augroup('kickstart-resize-splits', { clear = true }),
   callback = function()
     local current_tab = vim.fn.tabpagenr()
-    vim.cmd('tabdo wincmd =')
+    vim.cmd 'tabdo wincmd ='
     vim.cmd('tabnext ' .. current_tab)
   end,
 })

@@ -2,9 +2,7 @@ vim.pack.add { 'https://github.com/nvimdev/dashboard-nvim' }
 
 -- Ensure cache directory path is not blocked by a stale file
 local cache_dir = vim.fn.stdpath 'cache' .. '/dashboard'
-if vim.fn.filereadable(cache_dir) == 1 and vim.fn.isdirectory(cache_dir) == 0 then
-  vim.fn.delete(cache_dir)
-end
+if vim.fn.filereadable(cache_dir) == 1 and vim.fn.isdirectory(cache_dir) == 0 then vim.fn.delete(cache_dir) end
 
 local logo = {
   [[                                                          ]],

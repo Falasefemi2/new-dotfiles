@@ -17,7 +17,7 @@ vim.api.nvim_create_autocmd('BufWritePre', {
     local bufnr = args.buf
     -- Only run if gopls is attached
     local has_gopls = false
-    for _, c in ipairs(vim.lsp.get_clients({ bufnr = bufnr })) do
+    for _, c in ipairs(vim.lsp.get_clients { bufnr = bufnr }) do
       if c.name == 'gopls' then
         has_gopls = true
         break
@@ -66,25 +66,15 @@ vim.api.nvim_create_autocmd('FileType', {
   callback = function(event)
     local buf = event.buf
 
-    vim.keymap.set('n', '<leader>gt', function()
-      vim.cmd 'split | terminal go test ./...'
-    end, { buffer = buf, desc = '[G]o [T]est (current package)' })
+    vim.keymap.set('n', '<leader>gt', function() vim.cmd 'split | terminal go test ./...' end, { buffer = buf, desc = '[G]o [T]est (current package)' })
 
-    vim.keymap.set('n', '<leader>gT', function()
-      vim.cmd 'split | terminal go test -v ./...'
-    end, { buffer = buf, desc = '[G]o [T]est verbose' })
+    vim.keymap.set('n', '<leader>gT', function() vim.cmd 'split | terminal go test -v ./...' end, { buffer = buf, desc = '[G]o [T]est verbose' })
 
-    vim.keymap.set('n', '<leader>gr', function()
-      vim.cmd 'split | terminal go run .'
-    end, { buffer = buf, desc = '[G]o [R]un' })
+    vim.keymap.set('n', '<leader>gr', function() vim.cmd 'split | terminal go run .' end, { buffer = buf, desc = '[G]o [R]un' })
 
-    vim.keymap.set('n', '<leader>gm', function()
-      vim.cmd 'split | terminal go mod tidy'
-    end, { buffer = buf, desc = '[G]o [M]od tidy' })
+    vim.keymap.set('n', '<leader>gm', function() vim.cmd 'split | terminal go mod tidy' end, { buffer = buf, desc = '[G]o [M]od tidy' })
 
-    vim.keymap.set('n', '<leader>gv', function()
-      vim.cmd 'split | terminal go vet ./...'
-    end, { buffer = buf, desc = '[G]o [V]et' })
+    vim.keymap.set('n', '<leader>gv', function() vim.cmd 'split | terminal go vet ./...' end, { buffer = buf, desc = '[G]o [V]et' })
 
     -- Toggle test file / implementation file
     vim.keymap.set('n', '<leader>ga', function()

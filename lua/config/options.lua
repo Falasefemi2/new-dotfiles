@@ -12,7 +12,7 @@ vim.o.breakindent = true
 vim.o.undofile = true
 vim.o.swapfile = false
 -- Persist undo on Windows (undofile needs a directory)
-local undodir = vim.fn.stdpath('data') .. '/undo'
+local undodir = vim.fn.stdpath 'data' .. '/undo'
 if vim.fn.isdirectory(undodir) == 0 then vim.fn.mkdir(undodir, 'p') end
 vim.o.undodir = undodir
 
@@ -31,7 +31,7 @@ vim.o.scrolloff = 10
 vim.o.confirm = true
 
 -- Diagnostics UI (moved from init.lua:186-212 for discoverability)
-vim.diagnostic.config({
+vim.diagnostic.config {
   update_in_insert = false,
   severity_sort = true,
   float = { border = 'rounded', source = 'if_many' },
@@ -39,11 +39,9 @@ vim.diagnostic.config({
   virtual_text = true,
   virtual_lines = false,
   jump = {
-    on_jump = function(_, bufnr)
-      vim.diagnostic.open_float({ bufnr = bufnr, scope = 'cursor', focus = false })
-    end,
+    on_jump = function(_, bufnr) vim.diagnostic.open_float { bufnr = bufnr, scope = 'cursor', focus = false } end,
   },
-})
+}
 
 local diag_signs = { Error = '󰅚 ', Warn = '󰀦 ', Hint = '󰌶 ', Info = '󰋽 ' }
 for type, icon in pairs(diag_signs) do

@@ -1,25 +1,29 @@
 vim.pack.add { 'https://github.com/folke/persistence.nvim' }
 
+-- This version of persistence.nvim (see lua/persistence/config.lua) only supports
+-- {dir, need, branch}. It fires User PersistenceSavePre/Post, NOT pre_save.
+-- We hook PersistenceSavePre to wipe neo-tree before :mksession.
+vim.o.sessionoptions = 'buffers,curdir,tabpages,winsize,help,globals,skiprtp,folds'
+
 require('persistence').setup {
   dir = vim.fn.stdpath 'data' .. '/session/',
-  -- winpos causes stale window layout + neo-tree invalid window errors, so removed
-  options = { 'buffers', 'curdir', 'tabpages', 'winsize' },
-  -- Prevent neo-tree buffer from being persisted.
-  -- That `badd +0 neo-tree filesystem [1]` line in session files is what causes:
-  --   E95: Buffer with this name already exists
-  --   Invalid 'window': Expected Lua number (neo-tree-follow on stale window)
-  pre_save = function()
-    -- Close neo-tree UI first
+  need = 1,
+  branch = true,
+}
+
+vim.api.nvim_create_autocmd('User', {
+  pattern = 'PersistenceSavePre',
+  group = vim.api.nvim_create_augroup('persistence-neotree-fix', { clear = true }),
+  callback = function()
     pcall(vim.cmd, 'Neotree close')
-    -- Force-wipe any remaining neo-tree buffers that would still be saved via :mksession
     for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+      local ok_ft, ft = pcall(function() return vim.bo[buf].filetype end)
       local name = vim.api.nvim_buf_get_name(buf)
-      if name:match('neo%-tree') then pcall(vim.api.nvim_buf_delete, buf, { force = true }) end
+      local is_neotree = (ok_ft and ft == 'neo-tree') or name:match 'neo%-tree' ~= nil
+      if is_neotree then pcall(vim.api.nvim_buf_delete, buf, { force = true }) end
     end
   end,
-  post_save = nil,
-  save_empty_session = false,
-}
+})
 
 -- Restore the last session automatically on startup (if no arguments were passed)
 vim.api.nvim_create_autocmd('VimEnter', {
@@ -38,5 +42,5 @@ vim.api.nvim_create_autocmd('VimEnter', {
 -- Session keymaps
 vim.keymap.set('n', '<leader>Ss', function() require('persistence').save() end, { desc = '[S]ession [S]ave' })
 vim.keymap.set('n', '<leader>Sl', function() require('persistence').load() end, { desc = '[S]ession [L]oad' })
-vim.keymap.set('n', '<leader>Sd', function() require('persistence').stop() end, { desc = '[S]ession [D]on\'t save' })
+vim.keymap.set('n', '<leader>Sd', function() require('persistence').stop() end, { desc = "[S]ession [D]on't save" })
 vim.keymap.set('n', '<leader>SS', function() require('persistence').select() end, { desc = '[S]ession [S]elect (picker)' })

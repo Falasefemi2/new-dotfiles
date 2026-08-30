@@ -1,21 +1,15 @@
 vim.pack.add { 'https://github.com/nvim-lualine/lualine.nvim' }
 
 local function lsp_status()
-  local buf_clients = vim.lsp.get_clients({ bufnr = 0 })
-  if #buf_clients == 0 then
-    return 'No LSP'
-  end
+  local buf_clients = vim.lsp.get_clients { bufnr = 0 }
+  if #buf_clients == 0 then return 'No LSP' end
 
   local client_names = {}
   for _, client in ipairs(buf_clients) do
-    if client.name ~= 'null-ls' and client.name ~= 'copilot' then
-      table.insert(client_names, client.name)
-    end
+    if client.name ~= 'null-ls' and client.name ~= 'copilot' then table.insert(client_names, client.name) end
   end
 
-  if #client_names == 0 then
-    return 'LSP'
-  end
+  if #client_names == 0 then return 'LSP' end
   return '󰒋 ' .. table.concat(client_names, ', ')
 end
 

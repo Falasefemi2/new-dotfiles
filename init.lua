@@ -94,9 +94,9 @@ vim.loader.enable()
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
-require('config.options')
-require('config.keymaps')
-require('config.autocmds')
+require 'config.options'
+require 'config.keymaps'
+require 'config.autocmds'
 
 -- ============================================================
 -- SECTION 2: PLUGIN MANAGER INTRO
@@ -518,9 +518,11 @@ do
       if client and client:supports_method('textDocument/inlayHint', event.buf) then
         -- Enable by default (was toggle-only before)
         vim.lsp.inlay_hint.enable(true, { bufnr = event.buf })
-        map('<leader>th', function()
-          vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled { bufnr = event.buf }, { bufnr = event.buf })
-        end, '[T]oggle Inlay [H]ints')
+        map(
+          '<leader>th',
+          function() vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled { bufnr = event.buf }, { bufnr = event.buf }) end,
+          '[T]oggle Inlay [H]ints'
+        )
       end
 
       -- Enable codelens refresh for servers that support it (e.g. gopls)
@@ -583,11 +585,9 @@ do
         local ok, py = pcall(require, 'custom.plugins.python')
         if ok and py and py.find_python_venv then
           local path = py.find_python_venv(config.root_dir)
-          if path then
-            config.settings = vim.tbl_deep_extend('force', config.settings or {}, {
-              python = { pythonPath = path },
-            })
-          end
+          if path then config.settings = vim.tbl_deep_extend('force', config.settings or {}, {
+            python = { pythonPath = path },
+          }) end
         end
       end,
       settings = {
@@ -727,9 +727,7 @@ do
     return root ~= nil and #vim.fs.find({ 'biome.json', 'biome.jsonc' }, { path = root, upward = true }) > 0
   end
   local function js_formatters(bufnr)
-    if has_biome(bufnr) then
-      return { 'biome' }
-    end
+    if has_biome(bufnr) then return { 'biome' } end
     return { 'prettierd', 'prettier', stop_after_first = true }
   end
 
@@ -868,32 +866,49 @@ do
 
   -- Ensure basic parsers are installed
   local parsers = {
-    'bash', 'c', 'diff', 'html', 'lua', 'luadoc',
-    'markdown', 'markdown_inline', 'python', 'query', 'vim', 'vimdoc',
+    'bash',
+    'c',
+    'diff',
+    'html',
+    'lua',
+    'luadoc',
+    'markdown',
+    'markdown_inline',
+    'python',
+    'query',
+    'vim',
+    'vimdoc',
     -- Go
-    'go', 'gomod', 'gosum', 'gowork',
+    'go',
+    'gomod',
+    'gosum',
+    'gowork',
     -- JS/TS
-    'javascript', 'typescript', 'tsx', 'jsdoc',
+    'javascript',
+    'typescript',
+    'tsx',
+    'jsdoc',
     -- Data formats
-    'json', 'jsonc', 'yaml', 'toml',
+    'json',
+    'jsonc',
+    'yaml',
+    'toml',
     -- Web
-    'css', 'scss',
+    'css',
+    'scss',
     -- Infra & misc
-    'dockerfile', 'sql', 'regex',
-    'git_config', 'gitignore',
+    'dockerfile',
+    'sql',
+    'regex',
+    'git_config',
+    'gitignore',
   }
   local installed_base = require('nvim-treesitter').get_installed 'parsers'
   local missing_base = {}
   for _, p in ipairs(parsers) do
-    if not vim.tbl_contains(installed_base, p) then
-      table.insert(missing_base, p)
-    end
+    if not vim.tbl_contains(installed_base, p) then table.insert(missing_base, p) end
   end
-  if #missing_base > 0 then
-    pcall(function()
-      require('nvim-treesitter').install(missing_base)
-    end)
-  end
+  if #missing_base > 0 then pcall(function() require('nvim-treesitter').install(missing_base) end) end
 
   require('nvim-ts-autotag').setup {
     opts = {
@@ -948,9 +963,7 @@ do
         -- If a parser is available in `nvim-treesitter`, auto-install it and enable it after the installation is done
         pcall(function()
           local res = require('nvim-treesitter').install(language)
-          if res and type(res.await) == 'function' then
-            res:await(function() treesitter_try_attach(buf, language) end)
-          end
+          if res and type(res.await) == 'function' then res:await(function() treesitter_try_attach(buf, language) end) end
         end)
       else
         -- Try to enable treesitter features in case the parser exists but is not available from `nvim-treesitter`

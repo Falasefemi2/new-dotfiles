@@ -23,9 +23,7 @@ toggleterm.setup {
 local terminals = {}
 local active_id = 1
 
-local function terminal_name(id)
-  return ('Terminal %d'):format(id)
-end
+local function terminal_name(id) return ('Terminal %d'):format(id) end
 
 local function terminal_ids()
   local ids = {}

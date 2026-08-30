@@ -48,10 +48,7 @@ vim.lsp.config('effect_tsgo', {
     if not find_effect_tsgo_exe(root) then
       -- Do not start (and do not call on_dir) when the binary is not present,
       -- so a broken client is never created in the first place.
-      vim.notify_once(
-        'effect_tsgo: @effect/tsgo binary not found in ' .. (root or 'cwd') .. '; skipping effect_tsgo',
-        vim.log.levels.WARN
-      )
+      vim.notify_once('effect_tsgo: @effect/tsgo binary not found in ' .. (root or 'cwd') .. '; skipping effect_tsgo', vim.log.levels.WARN)
       return
     end
     on_dir(root or vim.fn.getcwd())
@@ -96,11 +93,8 @@ vim.lsp.config('effect_tsgo', {
             if watchers then
               local filtered = {}
               for _, w in ipairs(watchers) do
-                local pat = type(w.globPattern) == 'string' and w.globPattern
-                  or (w.globPattern and w.globPattern.pattern)
-                if not (pat and pat:match '^bundled://') then
-                  table.insert(filtered, w)
-                end
+                local pat = type(w.globPattern) == 'string' and w.globPattern or (w.globPattern and w.globPattern.pattern)
+                if not (pat and pat:match '^bundled://') then table.insert(filtered, w) end
               end
               reg.registerOptions.watchers = filtered
             end
@@ -112,7 +106,7 @@ vim.lsp.config('effect_tsgo', {
   },
 })
 
-vim.lsp.enable('effect_tsgo')
+vim.lsp.enable 'effect_tsgo'
 
 -- ts_ls must never start in Effect projects: those are served only by
 -- effect_tsgo. Refuse to start (do not call on_dir) when the @effect/tsgo
@@ -123,15 +117,10 @@ vim.lsp.config('ts_ls', {
   root_dir = function(bufnr, on_dir)
     local root = vim.fs.root(bufnr, { 'tsconfig.json', 'jsconfig.json', 'package.json', 'bun.lock' })
     if root and find_effect_tsgo_exe(root) then
-      vim.notify_once(
-        'ts_ls: @effect/tsgo detected in ' .. root .. '; using effect_tsgo',
-        vim.log.levels.WARN
-      )
+      vim.notify_once('ts_ls: @effect/tsgo detected in ' .. root .. '; using effect_tsgo', vim.log.levels.WARN)
       return
     end
-    if ts_ls_orig_root_dir then
-      return ts_ls_orig_root_dir(bufnr, on_dir)
-    end
+    if ts_ls_orig_root_dir then return ts_ls_orig_root_dir(bufnr, on_dir) end
     on_dir(root or vim.fn.getcwd())
   end,
 })
@@ -143,7 +132,7 @@ vim.api.nvim_create_autocmd('LspAttach', {
   callback = function(args)
     local has_effect = false
     local ts_clients = {}
-    for _, c in pairs(vim.lsp.get_clients({ bufnr = args.buf })) do
+    for _, c in pairs(vim.lsp.get_clients { bufnr = args.buf }) do
       if c.name == 'effect_tsgo' then has_effect = true end
       if c.name == 'ts_ls' then table.insert(ts_clients, c) end
     end
@@ -157,25 +146,20 @@ vim.api.nvim_create_autocmd('LspAttach', {
 
 -- Helper commands
 vim.api.nvim_create_user_command('EffectTsgoInfo', function()
-  local clients = vim.lsp.get_clients({ name = 'effect_tsgo' })
+  local clients = vim.lsp.get_clients { name = 'effect_tsgo' }
   if #clients == 0 then
     vim.notify('effect_tsgo: not running', vim.log.levels.WARN)
     return
   end
   for _, client in ipairs(clients) do
     local pid = client.rpc and client.rpc.pid or 'unknown'
-    vim.notify(
-      string.format('effect_tsgo: pid=%s, root=%s', pid, client.config.root_dir or 'unknown'),
-      vim.log.levels.INFO
-    )
+    vim.notify(string.format('effect_tsgo: pid=%s, root=%s', pid, client.config.root_dir or 'unknown'), vim.log.levels.INFO)
   end
 end, { desc = 'Show effect_tsgo LSP info' })
 
 vim.api.nvim_create_user_command('EffectTsgoRestart', function()
-  for _, client in pairs(vim.lsp.get_clients({ name = 'effect_tsgo' })) do
+  for _, client in pairs(vim.lsp.get_clients { name = 'effect_tsgo' }) do
     client:stop()
   end
-  vim.defer_fn(function()
-    vim.cmd('edit')
-  end, 100)
+  vim.defer_fn(function() vim.cmd 'edit' end, 100)
 end, { desc = 'Restart effect_tsgo LSP' })
