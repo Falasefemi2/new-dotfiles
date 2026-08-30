@@ -38,6 +38,9 @@ vim.keymap.set('n', '<F7>', function() require('dapui').toggle() end, { desc = '
 local dap = require 'dap'
 local dapui = require 'dapui'
 
+-- Trace logging for Windows delve issues: :help dap.set_log_level -> %LOCALAPPDATA%\nvim-data\..\cache\nvim\dap.log
+dap.set_log_level 'TRACE'
+
 require('mason-nvim-dap').setup {
   automatic_installation = true,
   handlers = {},
@@ -89,10 +92,19 @@ dap.listeners.before.event_terminated['dapui_config'] = dapui.close
 dap.listeners.before.event_exited['dapui_config'] = dapui.close
 
 -- Golang (delve) - via nvim-dap-go
+-- On Windows avoid dlv.CMD wrapper (slow, causes "adapter didn't respond")
+local delve_path = vim.fn.exepath 'dlv'
+if vim.fn.has 'win32' == 1 then
+  local direct = vim.fn.stdpath 'data' .. '/mason/packages/delve/dlv.exe'
+  if vim.fn.filereadable(direct) == 1 then delve_path = direct end
+end
 require('dap-go').setup {
   delve = {
+    path = delve_path,
     -- On Windows delve must be run attached or it crashes.
     detached = vim.fn.has 'win32' == 0,
+    -- Increase init timeout for slow Windows Defender scans
+    build_flags = '',
   },
 }
 

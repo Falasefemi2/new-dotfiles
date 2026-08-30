@@ -187,17 +187,22 @@
 |--------|------|-------------|
 | `s` | n, x, o | Flash jump |
 
-## Debug (DAP)
+## Debug (DAP) - Go / Python / TS/JS (delve / debugpy / js-debug)
 
 | Keymap | Mode | Description |
 |--------|------|-------------|
-| `<F5>` | n | Start/Continue debugging |
+| `<F5>` | n | Start/Continue |
 | `<F1>` | n | Step into |
 | `<F2>` | n | Step over |
 | `<F3>` | n | Step out |
-| `<F7>` | n | Toggle DAP UI |
-| `<leader>b` | n | Toggle breakpoint |
-| `<leader>B` | n | Set conditional breakpoint |
+| `<F6>` | n | Terminate |
+| `<F7>` | n | Toggle DAP UI (last session) |
+| `<leader>db` | n | Toggle breakpoint |
+| `<leader>dB` | n | Conditional breakpoint (input) |
+| `<leader>dl` | n | Log point (input) |
+| `<leader>dr` | n | Open REPL |
+| `<leader>du` | n | Toggle DAP UI |
+| `<leader>de` | n, v | Evaluate expression (visual) |
 
 ## Utility Windows
 
