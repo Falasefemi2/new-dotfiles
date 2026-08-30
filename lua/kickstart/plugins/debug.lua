@@ -13,13 +13,15 @@ vim.pack.add {
   'https://github.com/mason-org/mason.nvim',
   'https://github.com/jay-babu/mason-nvim-dap.nvim',
   'https://github.com/leoluz/nvim-dap-go',
+  'https://github.com/mfussenegger/nvim-dap-python',
 }
 
--- Basic debugging keymaps, feel free to change to your liking!
+-- Basic debugging keymaps
 vim.keymap.set('n', '<F5>', function() require('dap').continue() end, { desc = 'Debug: Start/Continue' })
 vim.keymap.set('n', '<F1>', function() require('dap').step_into() end, { desc = 'Debug: Step Into' })
 vim.keymap.set('n', '<F2>', function() require('dap').step_over() end, { desc = 'Debug: Step Over' })
 vim.keymap.set('n', '<F3>', function() require('dap').step_out() end, { desc = 'Debug: Step Out' })
+vim.keymap.set('n', '<F6>', function() require('dap').terminate() end, { desc = 'Debug: Terminate' })
 vim.keymap.set('n', '<leader>db', function() require('dap').toggle_breakpoint() end, { desc = 'Debug: Toggle [B]reakpoint' })
 vim.keymap.set(
   'n',
@@ -27,26 +29,22 @@ vim.keymap.set(
   function() require('dap').set_breakpoint(vim.fn.input 'Breakpoint condition: ') end,
   { desc = 'Debug: Set [B]reakpoint (conditional)' }
 )
--- Toggle to see last session result. Without this, you can't see session output in case of unhandled exception.
+vim.keymap.set('n', '<leader>dl', function() require('dap').set_breakpoint(nil, nil, vim.fn.input 'Log point message: ') end, { desc = 'Debug: Log point' })
+vim.keymap.set('n', '<leader>dr', function() require('dap').repl.open() end, { desc = 'Debug: REPL' })
+vim.keymap.set('n', '<leader>du', function() require('dapui').toggle() end, { desc = 'Debug: Toggle UI' })
+vim.keymap.set({ 'n', 'v' }, '<leader>de', function() require('dapui').eval() end, { desc = 'Debug: Eval' })
 vim.keymap.set('n', '<F7>', function() require('dapui').toggle() end, { desc = 'Debug: See last session result.' })
 
 local dap = require 'dap'
 local dapui = require 'dapui'
 
 require('mason-nvim-dap').setup {
-  -- Makes a best effort to setup the various debuggers with
-  -- reasonable debug configurations
   automatic_installation = true,
-
-  -- You can provide additional configuration to the handlers,
-  -- see mason-nvim-dap README for more information
   handlers = {},
-
-  -- You'll need to check that you have the required things installed
-  -- online, please don't ask me how to install them :)
   ensure_installed = {
-    -- Update this to ensure that you have the debuggers for the langs you want
-    'delve',
+    'delve', -- Go
+    'python', -- debugpy (Python)
+    'js', -- js-debug-adapter (TS/JS)
   },
 }
 
@@ -90,11 +88,93 @@ dap.listeners.after.event_initialized['dapui_config'] = dapui.open
 dap.listeners.before.event_terminated['dapui_config'] = dapui.close
 dap.listeners.before.event_exited['dapui_config'] = dapui.close
 
--- Install golang specific config
+-- Golang (delve) - via nvim-dap-go
 require('dap-go').setup {
   delve = {
     -- On Windows delve must be run attached or it crashes.
-    -- See https://github.com/leoluz/nvim-dap-go/blob/main/README.md#configuring
     detached = vim.fn.has 'win32' == 0,
   },
 }
+
+-- Python (debugpy) - respects venv from lua/custom/plugins/python.lua
+pcall(function()
+  local py = require 'custom.plugins.python'
+  local venv_py = py and py.find_python_venv and py.find_python_venv() or nil
+  -- mason debugpy path as fallback
+  local mason_py = vim.fn.stdpath 'data' .. '/mason/packages/debugpy/venv/Scripts/python.exe'
+  if vim.fn.has 'win32' == 0 then mason_py = vim.fn.stdpath 'data' .. '/mason/packages/debugpy/venv/bin/python' end
+  local python_path = venv_py or (vim.fn.executable(mason_py) == 1 and mason_py or 'python')
+  require('dap-python').setup(python_path)
+end)
+
+-- JS/TS (js-debug-adapter) - Node, Chrome, etc.
+pcall(function()
+  local dap = require 'dap'
+  -- mason js-debug-adapter location (cross-platform)
+  local js_debug = vim.fn.stdpath 'data' .. '/mason/packages/js-debug-adapter'
+  local cmd = js_debug .. '/js-debug/src/dapDebugServer.js'
+  -- Windows: js-debug is unpacked via mason, use js-debug-adapter directly if available
+  if vim.fn.executable(js_debug .. '/js-debug-adapter') == 1 then
+    -- mason v2 layout
+    dap.adapters['pwa-node'] = {
+      type = 'server',
+      host = 'localhost',
+      port = '${port}',
+      executable = { command = 'node', args = { js_debug .. '/js-debug/src/dapDebugServer.js', '${port}' } },
+    }
+  elseif vim.fn.filereadable(cmd) == 1 then
+    dap.adapters['pwa-node'] = {
+      type = 'server',
+      host = 'localhost',
+      port = '${port}',
+      executable = { command = 'node', args = { cmd, '${port}' } },
+    }
+  else
+    -- Fallback: try mason bin js-debug-adapter (mason-nvim-dap may have created it)
+    local bin = vim.fn.stdpath 'data' .. '/mason/bin/js-debug-adapter'
+    if vim.fn.executable(bin) == 1 then
+      dap.adapters['pwa-node'] = {
+        type = 'server',
+        host = 'localhost',
+        port = '${port}',
+        executable = { command = 'node', args = { bin, '${port}' } },
+      }
+    end
+  end
+
+  -- Reuse pwa-node for other JS runtimes
+  for _, adapter in ipairs { 'pwa-chrome', 'pwa-msedge', 'node-terminal', 'pwa-extensionHost' } do
+    if not dap.adapters[adapter] and dap.adapters['pwa-node'] then dap.adapters[adapter] = dap.adapters['pwa-node'] end
+  end
+
+  -- DAP configurations if not already set by a plugin
+  for _, lang in ipairs { 'typescript', 'javascript', 'typescriptreact', 'javascriptreact' } do
+    if not dap.configurations[lang] then
+      dap.configurations[lang] = {
+        {
+          type = 'pwa-node',
+          request = 'launch',
+          name = 'Launch file',
+          program = '${file}',
+          cwd = '${workspaceFolder}',
+        },
+        {
+          type = 'pwa-node',
+          request = 'attach',
+          name = 'Attach',
+          processId = require('dap.utils').pick_process,
+          cwd = '${workspaceFolder}',
+        },
+        {
+          type = 'pwa-node',
+          request = 'launch',
+          name = 'Launch via npm',
+          runtimeExecutable = 'npm',
+          runtimeArgs = { 'run', 'dev' },
+          cwd = '${workspaceFolder}',
+          console = 'integratedTerminal',
+        },
+      }
+    end
+  end
+end)

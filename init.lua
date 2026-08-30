@@ -697,6 +697,7 @@ do
     'black',
     'isort',
     'debugpy',
+    'js-debug-adapter',
     -- Go tools
     'gofumpt',
     'goimports',
