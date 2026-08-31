@@ -36,8 +36,16 @@ function M.find_python_venv(root_dir)
   return nil
 end
 
-local python_path = M.find_python_venv()
-if python_path then vim.g.python3_host_prog = python_path end
+-- Defer 40ms fs.find (upward search) past startup - only needed when Python LSP attaches
+vim.api.nvim_create_autocmd('FileType', {
+  pattern = 'python',
+  once = true,
+  group = vim.api.nvim_create_augroup('lazy-python-host', { clear = true }),
+  callback = function()
+    local p = M.find_python_venv()
+    if p then vim.g.python3_host_prog = p end
+  end,
+})
 
 -- Update Pyright configuration safely when attached
 vim.api.nvim_create_autocmd('LspAttach', {

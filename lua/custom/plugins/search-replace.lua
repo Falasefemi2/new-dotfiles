@@ -3,21 +3,31 @@ vim.pack.add {
   'https://github.com/nvim-lua/plenary.nvim',
 }
 
-require('spectre').setup {
-  color_devicons = vim.g.have_nerd_font,
-  live_update = true,
-  is_insert_mode = true,
-  use_trouble_qf = false,
-}
+-- Lazy 26ms spectre.ui + 9ms spectre - only on first <leader>r use
+local spectre_setup = false
+local function ensure_spectre()
+  if spectre_setup then return end
+  spectre_setup = true
+  require('spectre').setup {
+    color_devicons = vim.g.have_nerd_font,
+    live_update = true,
+    is_insert_mode = true,
+    use_trouble_qf = false,
+  }
+end
 
-vim.keymap.set('n', '<leader>rp', '<cmd>lua require("spectre").toggle()<CR>', { desc = '[R]eplace in [P]roject (Spectre)' })
-vim.keymap.set('n', '<leader>rP', '<cmd>lua require("spectre").open_visual({ select_word = true })<CR>', { desc = '[R]eplace [P]roject word under cursor' })
-vim.keymap.set(
-  'n',
-  '<leader>rf',
-  '<cmd>lua require("spectre").open_file_search({ select_word = true })<CR>',
-  { desc = '[R]eplace in current [F]ile (Spectre)' }
-)
+vim.keymap.set('n', '<leader>rp', function()
+  ensure_spectre()
+  require('spectre').toggle()
+end, { desc = '[R]eplace in [P]roject (Spectre)' })
+vim.keymap.set('n', '<leader>rP', function()
+  ensure_spectre()
+  require('spectre').open_visual { select_word = true }
+end, { desc = '[R]eplace [P]roject word under cursor' })
+vim.keymap.set('n', '<leader>rf', function()
+  ensure_spectre()
+  require('spectre').open_file_search { select_word = true }
+end, { desc = '[R]eplace in current [F]ile (Spectre)' })
 
 local function get_selected_text()
   local old = vim.fn.getreg 'v'

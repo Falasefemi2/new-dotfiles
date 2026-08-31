@@ -2,6 +2,11 @@
 -- Centralized Neovim options (extracted from init.lua:106-177 for maintainability)
 
 vim.g.have_nerd_font = true
+-- Disable unused runtime plugins (save ~20ms netrw+matchit)
+vim.g.loaded_netrw = 1
+vim.g.loaded_netrwPlugin = 1
+vim.g.loaded_matchit = 1
+vim.g.loaded_matchparen = 0 -- keep matchparen for %
 
 vim.o.number = true
 -- vim.o.relativenumber = true
