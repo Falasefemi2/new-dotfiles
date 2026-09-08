@@ -24,7 +24,6 @@ local function ensure_dap()
   _dap_ready = true
   local dap = require 'dap'
   local dapui = require 'dapui'
-  dap.set_log_level 'TRACE'
   require('mason-nvim-dap').setup {
     automatic_installation = true,
     handlers = {},
@@ -48,8 +47,8 @@ local function ensure_dap()
       },
     },
   }
-  vim.api.nvim_set_hl(0, 'DapBreak', { fg = '#e51400' })
-  vim.api.nvim_set_hl(0, 'DapStop', { fg = '#ffcc00' })
+  vim.api.nvim_set_hl(0, 'DapBreak', { fg = '#f38ba8' })
+  vim.api.nvim_set_hl(0, 'DapStop', { fg = '#f9e2af' })
   local breakpoint_icons = vim.g.have_nerd_font
       and { Breakpoint = '', BreakpointCondition = '', BreakpointRejected = '', LogPoint = '', Stopped = '' }
     or { Breakpoint = '●', BreakpointCondition = '⊜', BreakpointRejected = '⊘', LogPoint = '◆', Stopped = '⭔' }
@@ -59,8 +58,16 @@ local function ensure_dap()
     vim.fn.sign_define(tp, { text = icon, texthl = hl, numhl = hl })
   end
   dap.listeners.after.event_initialized['dapui_config'] = dapui.open
+  dap.listeners.before.event_terminated['dapui_config'] = dapui.close
+  dap.listeners.before.event_exited['dapui_config'] = dapui.close
+  -- Prefer the real mason delve binary over the PATH shim (dlv.cmd on
+  -- Windows can break `dlv dap`). Falls back to exepath when missing.
   local delve_path = vim.fn.exepath 'dlv'
-  if vim.fn.has 'win32' == 1 then
+  local mason_delve = vim.fn.stdpath 'data' .. '/mason/packages/delve/dlv'
+  if vim.fn.has 'win32' == 1 then mason_delve = mason_delve .. '.exe' end
+  if vim.fn.executable(mason_delve) == 1 then
+    delve_path = mason_delve
+  elseif vim.fn.has 'win32' == 1 then
     local direct = vim.fn.stdpath 'data' .. '/mason/packages/delve/dlv.exe'
     if vim.fn.filereadable(direct) == 1 then delve_path = direct end
   end
@@ -81,12 +88,12 @@ local function ensure_dap()
     if vim.fn.executable(js_debug .. '/js-debug-adapter') == 1 then
       dap2.adapters['pwa-node'] = {
         type = 'server',
-        host = 'localhost',
+        host = '127.0.0.1',
         port = '${port}',
-        executable = { command = 'node', args = { js_debug .. '/js-debug/src/dapDebugServer.js', '${port}' } },
+        executable = { command = 'node', args = { js_debug .. '/js-debug/src/dapDebugServer.js', '${port}', '127.0.0.1' } },
       }
     elseif vim.fn.filereadable(cmd) == 1 then
-      dap2.adapters['pwa-node'] = { type = 'server', host = 'localhost', port = '${port}', executable = { command = 'node', args = { cmd, '${port}' } } }
+      dap2.adapters['pwa-node'] = { type = 'server', host = '127.0.0.1', port = '${port}', executable = { command = 'node', args = { cmd, '${port}', '127.0.0.1' } } }
     else
       local bin = vim.fn.stdpath 'data' .. '/mason/bin/js-debug-adapter'
       if vim.fn.executable(bin) == 1 then
@@ -165,4 +172,14 @@ end, { desc = 'Debug: Eval' })
 vim.keymap.set('n', '<F7>', function()
   ensure_dap()
   require('dapui').toggle()
-end, { desc = 'Debug: See last session result.' })
+end, { desc = 'Debug: Toggle UI' })
+-- Go test debugging via nvim-dap-go (only meaningful in Go buffers, but
+-- harmless globally since dap-go errors clearly outside Go projects)
+vim.keymap.set('n', '<leader>dt', function()
+  ensure_dap()
+  require('dap-go').debug_test()
+end, { desc = 'Debug: Go [T]est (nearest)' })
+vim.keymap.set('n', '<leader>dT', function()
+  ensure_dap()
+  require('dap-go').debug_last_test()
+end, { desc = 'Debug: Go last [T]est' })

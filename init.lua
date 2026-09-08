@@ -237,16 +237,36 @@ do
   vim.keymap.set('n', '<leader>gg', '<cmd>Neogit<cr>', { desc = 'Open Neogit UI' })
 
   -- [[ Colorscheme ]]
-  -- You can easily change to a different colorscheme.
-  -- Change the name of the colorscheme plugin below, and then
-  -- change the command under that to load whatever the name of that colorscheme is.
-  --
-  -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
-  vim.pack.add { gh 'folke/tokyonight.nvim' }
+  -- Catppuccin (mocha by default, latte on light background).
+  -- Change flavour with `:Catppuccin mocha|macchiato|frappe|latte`.
+  vim.pack.add { { src = gh 'catppuccin/nvim', name = 'catppuccin' } }
 
-  --
+  require('catppuccin').setup {
+    flavour = 'mocha',
+    background = { light = 'latte', dark = 'mocha' },
+    transparent_background = false,
+    term_colors = true,
+    integrations = {
+      cmp = true,
+      gitsigns = true,
+      mason = true,
+      mini = { enabled = true },
+      native_lsp = { enabled = true },
+      neotree = true,
+      noice = true,
+      notify = true,
+      nvim_surround = true,
+      telescope = { enabled = true },
+      treesitter = true,
+      which_key = true,
+      dap = true,
+      dap_ui = true,
+      indent_blankline = { enabled = true },
+    },
+  }
+
   -- Load the colorscheme here.
-  vim.cmd.colorscheme 'tokyonight'
+  vim.cmd.colorscheme 'catppuccin'
 
   -- Highlight todo, notes, etc in comments
   vim.pack.add { gh 'folke/todo-comments.nvim' }
@@ -515,9 +535,10 @@ do
 
       -- Inlay hints: grey virtual text showing types like `err: error` on `:=`
       -- gopls `hints.assignVariableTypes` powers `ctx, err := ...` -> `err: error`
+      -- OFF by default (opt-in). Toggle with <leader>th.
       if client and client:supports_method('textDocument/inlayHint', event.buf) then
-        -- Enable by default (was toggle-only before)
-        vim.lsp.inlay_hint.enable(true, { bufnr = event.buf })
+        -- Ensure off by default; user opts in per-buffer via toggle.
+        vim.lsp.inlay_hint.enable(false, { bufnr = event.buf })
         map(
           '<leader>th',
           function() vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled { bufnr = event.buf }, { bufnr = event.buf }) end,

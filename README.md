@@ -29,7 +29,7 @@ nvim-pack-lock.json      # Tracked for reproducible installs
 | Area | Plugins |
 |------|---------|
 | Core | `guess-indent`, `which-key`, `todo-comments`, `mini.ai/surround/bufremove` |
-| UI | `tokyonight`, `lualine`, `dashboard-nvim`, `noice`, `nvim-notify`, `smear-cursor`, `statuscolumn`, `colorizer` |
+| UI | `catppuccin`, `lualine`, `dashboard-nvim`, `noice`, `nvim-notify`, `smear-cursor`, `statuscolumn`, `colorizer` |
 | Nav | `telescope`, `neo-tree`, `flash` |
 | LSP | `nvim-lspconfig`, `mason`, `mason-lspconfig`, `mason-tool-installer`, `fidget`, `conform`, `blink.cmp`, `LuaSnip` |
 | Treesitter | `nvim-treesitter:main`, `nvim-ts-autotag` |

@@ -50,17 +50,9 @@ vim.api.nvim_create_autocmd('BufWritePre', {
   end,
 })
 
--- Auto-enable inlay hints for Go buffers (shows `ctx: context.Context, err: error` in grey)
--- This is what makes `ctx, err := ...` display the type inline.
-vim.api.nvim_create_autocmd('LspAttach', {
-  group = vim.api.nvim_create_augroup('go-inlay-hints', { clear = true }),
-  callback = function(args)
-    local client = vim.lsp.get_client_by_id(args.data.client_id)
-    if client and client.name == 'gopls' and client:supports_method('textDocument/inlayHint', args.buf) then
-      vim.lsp.inlay_hint.enable(true, { bufnr = args.buf })
-    end
-  end,
-})
+-- Inlay hints for Go are OFF by default (opt-in via <leader>th).
+-- gopls hint settings stay enabled server-side in init.lua so that
+-- toggling displays `ctx: context.Context, err: error` in grey.
 
 -- Go keymaps (only active in Go buffers)
 vim.api.nvim_create_autocmd('FileType', {

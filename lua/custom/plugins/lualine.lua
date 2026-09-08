@@ -20,7 +20,10 @@ vim.api.nvim_create_autocmd('VimEnter', {
       require('lualine').setup {
         options = {
           icons_enabled = true,
-          theme = 'tokyonight',
+          -- 'catppuccin-nvim' follows the active flavour (mocha/latte/...).
+          -- Plain 'catppuccin' has no lualine theme module and triggers
+          -- :LualineNotices ("Theme `catppuccin` not found").
+          theme = 'catppuccin-nvim',
           component_separators = { left = '│', right = '│' },
           section_separators = { left = '', right = '' },
           disabled_filetypes = {
@@ -45,10 +48,10 @@ vim.api.nvim_create_autocmd('VimEnter', {
               'diagnostics',
               symbols = { error = ' ', warn = ' ', info = ' ', hint = ' ' },
               diagnostics_color = {
-                error = { fg = '#F7768E' },
-                warn = { fg = '#E0AF68' },
-                info = { fg = '#7DCFFF' },
-                hint = { fg = '#9ECE6A' },
+                error = { fg = '#f38ba8' },
+                warn = { fg = '#f9e2af' },
+                info = { fg = '#89dceb' },
+                hint = { fg = '#a6e3a1' },
               },
             },
           },
