@@ -1,6 +1,6 @@
+-- plenary comes from SECTION 4 (telescope); not duplicated here.
 vim.pack.add {
   'https://github.com/nvim-pack/nvim-spectre',
-  'https://github.com/nvim-lua/plenary.nvim',
 }
 
 -- Lazy 26ms spectre.ui + 9ms spectre - only on first <leader>r use

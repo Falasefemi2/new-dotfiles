@@ -1,24 +1,30 @@
 vim.pack.add { 'https://github.com/akinsho/toggleterm.nvim' }
 
-local toggleterm = require 'toggleterm'
-local Terminal = require('toggleterm.terminal').Terminal
-
-toggleterm.setup {
-  direction = 'float',
-  hide_numbers = true,
-  shade_terminals = true,
-  persist_size = true,
-  persist_mode = true,
-  start_in_insert = true,
-  insert_mappings = true,
-  terminal_mappings = true,
-  float_opts = {
-    border = 'curved',
-    width = function() return math.floor(vim.o.columns * 0.9) end,
-    height = function() return math.floor(vim.o.lines * 0.8) end,
-    winblend = 0,
-  },
-}
+local toggleterm = nil
+local Terminal = nil
+local _toggleterm_setup = false
+local function ensure_toggleterm()
+  if _toggleterm_setup then return end
+  _toggleterm_setup = true
+  toggleterm = require 'toggleterm'
+  Terminal = require('toggleterm.terminal').Terminal
+  toggleterm.setup {
+    direction = 'float',
+    hide_numbers = true,
+    shade_terminals = true,
+    persist_size = true,
+    persist_mode = true,
+    start_in_insert = true,
+    insert_mappings = true,
+    terminal_mappings = true,
+    float_opts = {
+      border = 'curved',
+      width = function() return math.floor(vim.o.columns * 0.9) end,
+      height = function() return math.floor(vim.o.lines * 0.8) end,
+      winblend = 0,
+    },
+  }
+end
 
 local terminals = {}
 local active_id = 1
@@ -43,6 +49,7 @@ local function next_terminal_id()
 end
 
 local function get_terminal(id)
+  ensure_toggleterm()
   if not terminals[id] then
     terminals[id] = Terminal:new {
       id = id,
@@ -105,6 +112,7 @@ local function select_terminal()
 end
 
 local function close_terminal()
+  ensure_toggleterm()
   local term = terminals[active_id]
   if not term then return end
 

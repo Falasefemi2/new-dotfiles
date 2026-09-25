@@ -6,7 +6,7 @@ vim.g.have_nerd_font = true
 vim.g.loaded_netrw = 1
 vim.g.loaded_netrwPlugin = 1
 vim.g.loaded_matchit = 1
-vim.g.loaded_matchparen = 0 -- keep matchparen for %
+-- matchparen stays enabled (do not set loaded_matchparen) for % matching
 
 vim.o.number = true
 -- vim.o.relativenumber = true
@@ -34,6 +34,7 @@ vim.o.inccommand = 'split'
 vim.o.cursorline = true
 vim.o.scrolloff = 10
 vim.o.confirm = true
+vim.o.cmdheight = 0
 
 -- Diagnostics UI (moved from init.lua:186-212 for discoverability)
 vim.diagnostic.config {

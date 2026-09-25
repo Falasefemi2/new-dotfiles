@@ -96,7 +96,13 @@ local function ensure_dap()
       dap2.adapters['pwa-node'] = { type = 'server', host = '127.0.0.1', port = '${port}', executable = { command = 'node', args = { cmd, '${port}', '127.0.0.1' } } }
     else
       local bin = vim.fn.stdpath 'data' .. '/mason/bin/js-debug-adapter'
-      if vim.fn.executable(bin) == 1 then
+      if vim.fn.has 'win32' == 1 then
+        local win_bin = bin .. '.cmd'
+        if vim.fn.executable(win_bin) == 1 then
+          dap2.adapters['pwa-node'] = { type = 'server', host = 'localhost', port = '${port}', executable = { command = win_bin, args = { '${port}' } } }
+        end
+      end
+      if not dap2.adapters['pwa-node'] and vim.fn.executable(bin) == 1 then
         dap2.adapters['pwa-node'] = { type = 'server', host = 'localhost', port = '${port}', executable = { command = 'node', args = { bin, '${port}' } } }
       end
     end
@@ -112,7 +118,7 @@ local function ensure_dap()
             type = 'pwa-node',
             request = 'launch',
             name = 'Launch via npm',
-            runtimeExecutable = 'npm',
+            runtimeExecutable = vim.fn.has 'win32' == 1 and 'npm.cmd' or 'npm',
             runtimeArgs = { 'run', 'dev' },
             cwd = '${workspaceFolder}',
             console = 'integratedTerminal',

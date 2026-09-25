@@ -150,14 +150,6 @@
 | `<leader>gv` | n | Run `go vet ./...` |
 | `<leader>ga` | n | Toggle test/impl file |
 
-## TypeScript Errors
-
-| Keymap | Mode | Description |
-|--------|------|-------------|
-| `<leader>de` | n | Show TS error |
-| `<leader>dE` | n | Show all TS errors |
-| `<leader>dt` | n | Toggle TS error auto-display |
-
 ## Folds (nvim-ufo)
 
 | Keymap | Mode | Description |
@@ -181,11 +173,12 @@
 |--------|------|-------------|
 | `<leader>mp` | n | Toggle markdown preview in browser |
 
-## Flash (Jump)
+## Flash (Jump) + Surround
 
 | Keymap | Mode | Description |
 |--------|------|-------------|
-| `s` | n, x, o | Flash jump |
+| `s` | n, x, o | Flash jump (overrides built-in substitute; use `cl` instead) |
+| `gsa` / `gsd` / `gsr` | n, x | Surround add / delete / replace (mini.surround lives under `gs` so `s` stays Flash) |
 
 ## Debug (DAP) - Go / Python / TS/JS (delve / debugpy / js-debug)
 
@@ -208,8 +201,18 @@
 
 | Keymap | Mode | Description |
 |--------|------|-------------|
-| `q` | n | Close help/man/notify/quickfix/terminal windows |
+| `q` | n | Close help/man/notify/quickfix windows (terminal excluded) |
 | `<Esc><Esc>` | t | Exit terminal mode |
+
+## TypeScript / JavaScript (Effect + fallback)
+
+| Keymap | Mode | Description |
+|--------|------|-------------|
+| `<leader>co` | n | Organize imports (TS/JS buffer) |
+| `<leader>cT` | n | Run `npm test` in split terminal |
+| `<leader>ce` | n | Show TS error (ts_ls buffers; diagnostic float in Effect projects) |
+| `<leader>cE` | n | Show all TS errors |
+| `<leader>ct` | n | Toggle TS error auto-display |
 
 ---
 

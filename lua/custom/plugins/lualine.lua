@@ -43,10 +43,10 @@ vim.api.nvim_create_autocmd('VimEnter', {
           lualine_b = { 'branch' },
           lualine_c = {
             { 'filename', file_status = true, path = 1 },
-            { 'diff', symbols = { added = ' ', modified = ' ', removed = ' ' } },
+            { 'diff', symbols = { added = '+', modified = '~', removed = '-' } },
             {
               'diagnostics',
-              symbols = { error = ' ', warn = ' ', info = ' ', hint = ' ' },
+              symbols = { error = 'E:', warn = 'W:', info = 'I:', hint = 'H:' },
               diagnostics_color = {
                 error = { fg = '#f38ba8' },
                 warn = { fg = '#f9e2af' },

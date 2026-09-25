@@ -44,7 +44,7 @@ vim.lsp.config('effect_tsgo', {
   end,
   filetypes = { 'typescript', 'typescriptreact', 'javascript', 'javascriptreact' },
   root_dir = function(bufnr, on_dir)
-    local root = vim.fs.root(bufnr, { 'tsconfig.json', 'jsconfig.json', 'package.json', 'bun.lock' })
+    local root = vim.fs.root(bufnr, { 'tsconfig.json', 'jsconfig.json', 'package.json', 'bun.lock', 'pnpm-lock.yaml', 'yarn.lock', 'package-lock.json' })
     if not find_effect_tsgo_exe(root) then
       -- Do not start (and do not call on_dir) when the binary is not present,
       -- so a broken client is never created in the first place.
@@ -115,7 +115,7 @@ local ts_ls_cfg = vim.lsp.config['ts_ls']
 local ts_ls_orig_root_dir = ts_ls_cfg and ts_ls_cfg.root_dir
 vim.lsp.config('ts_ls', {
   root_dir = function(bufnr, on_dir)
-    local root = vim.fs.root(bufnr, { 'tsconfig.json', 'jsconfig.json', 'package.json', 'bun.lock' })
+    local root = vim.fs.root(bufnr, { 'tsconfig.json', 'jsconfig.json', 'package.json', 'bun.lock', 'pnpm-lock.yaml', 'yarn.lock', 'package-lock.json' })
     if root and find_effect_tsgo_exe(root) then
       vim.notify_once('ts_ls: @effect/tsgo detected in ' .. root .. '; using effect_tsgo', vim.log.levels.WARN)
       return
@@ -125,21 +125,26 @@ vim.lsp.config('ts_ls', {
   end,
 })
 
--- Safety net: whichever server attaches second, ts_ls must yield whenever a
--- buffer is served by effect_tsgo (covers attach-order races).
+-- Safety net: single gate decides before either server starts (root_dir above),
+-- so double-attach should not happen. This only covers races where ts_ls
+-- attached first; defer the stop so effect_tsgo finishes initializing.
 vim.api.nvim_create_autocmd('LspAttach', {
   group = vim.api.nvim_create_augroup('effect-tsgo-override', { clear = true }),
   callback = function(args)
+    local buf = args.buf
     local has_effect = false
     local ts_clients = {}
-    for _, c in pairs(vim.lsp.get_clients { bufnr = args.buf }) do
+    for _, c in pairs(vim.lsp.get_clients { bufnr = buf }) do
       if c.name == 'effect_tsgo' then has_effect = true end
       if c.name == 'ts_ls' then table.insert(ts_clients, c) end
     end
-    if has_effect then
-      for _, c in ipairs(ts_clients) do
-        c:stop()
-      end
+    if has_effect and #ts_clients > 0 then
+      vim.schedule(function()
+        if not vim.api.nvim_buf_is_valid(buf) then return end
+        for _, c in ipairs(ts_clients) do
+          pcall(function() c:stop() end)
+        end
+      end)
     end
   end,
 })
@@ -163,3 +168,16 @@ vim.api.nvim_create_user_command('EffectTsgoRestart', function()
   end
   vim.defer_fn(function() vim.cmd 'edit' end, 100)
 end, { desc = 'Restart effect_tsgo LSP' })
+
+-- TS/JS helpers mirroring the Go workflow: organize imports + npm test.
+vim.api.nvim_create_autocmd('FileType', {
+  group = vim.api.nvim_create_augroup('ts-keymaps', { clear = true }),
+  pattern = { 'typescript', 'typescriptreact', 'javascript', 'javascriptreact' },
+  callback = function(event)
+    local buf = event.buf
+    vim.keymap.set('n', '<leader>co', function()
+      vim.lsp.buf.code_action { context = { only = { 'source.organizeImports' } }, apply = true }
+    end, { buffer = buf, desc = '[C]ode [O]rganize imports' })
+    vim.keymap.set('n', '<leader>cT', function() vim.cmd 'split | terminal npm test -- --watchAll=false' end, { buffer = buf, desc = '[C]ode [T]est (npm)' })
+  end,
+})

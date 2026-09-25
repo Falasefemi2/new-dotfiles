@@ -25,16 +25,23 @@ vim.api.nvim_create_autocmd('User', {
   end,
 })
 
--- Restore the last session automatically on startup (if no arguments were passed)
+-- Restore the last session automatically on startup (if no arguments were passed).
+-- Session wins over dashboard: dashboard draws first on VimEnter, then we
+-- load the session and wipe any leftover dashboard buffers.
 vim.api.nvim_create_autocmd('VimEnter', {
   group = vim.api.nvim_create_augroup('session-restore', { clear = true }),
   nested = true,
   callback = function()
     if vim.fn.argc(-1) == 0 and not vim.g.started_with_stdin then
-      -- Use vim.schedule + nested=true so :source session happens after
-      -- dashboard/neo-tree VimEnter setup. persistence.load() is no-op if no
-      -- session file exists for cwd (checks filereadable internally).
-      vim.schedule(function() require('persistence').load() end)
+      vim.schedule(function()
+        local ok = pcall(function() return require('persistence').load() end)
+        if ok then
+          for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+            local ok_ft, ft = pcall(function() return vim.bo[buf].filetype end)
+            if ok_ft and (ft == 'dashboard' or ft == 'snacks_dashboard') then pcall(vim.api.nvim_buf_delete, buf, { force = true }) end
+          end
+        end
+      end)
     end
   end,
 })

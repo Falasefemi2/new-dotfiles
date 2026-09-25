@@ -1,4 +1,4 @@
-vim.env.CC = 'gcc'
+if vim.fn.executable 'gcc' == 1 then vim.env.CC = 'gcc' end
 --[[
 
 =====================================================================
@@ -151,7 +151,13 @@ do
       end
 
       if name == 'LuaSnip' then
-        if vim.fn.has 'win32' ~= 1 and vim.fn.executable 'make' == 1 then run_build(name, { 'make', 'install_jsregexp' }, ev.data.path) end
+        if vim.fn.has 'win32' ~= 1 and vim.fn.executable 'make' == 1 then
+          run_build(name, { 'make', 'install_jsregexp' }, ev.data.path)
+        elseif vim.fn.has 'win32' == 1 then
+          vim.schedule(function()
+            vim.notify_once('LuaSnip: jsregexp skipped on Windows; regex-based snippets will not expand', vim.log.levels.WARN)
+          end)
+        end
         return
       end
 
@@ -161,8 +167,9 @@ do
         return
       end
 
-      if name == 'markdown-preview.nvim' and vim.fn.executable 'npm' == 1 then
-        run_build(name, { 'npm', 'install' }, ev.data.path .. '/app')
+      if name == 'markdown-preview.nvim' then
+        local npm = vim.fn.has 'win32' == 1 and 'npm.cmd' or 'npm'
+        if vim.fn.executable(npm) == 1 then run_build(name, { npm, 'install' }, ev.data.path .. '/app') end
         return
       end
     end,
@@ -227,12 +234,11 @@ do
     },
   }
 
-  -- Neogit git interface
+  -- Neogit git interface (telescope integration comes from SECTION 4)
   vim.pack.add {
     { src = gh 'NeogitOrg/neogit' },
     { src = gh 'sindrets/diffview.nvim' },
     { src = gh 'm00qek/baleia.nvim' },
-    { src = gh 'nvim-telescope/telescope.nvim' },
   }
   vim.keymap.set('n', '<leader>gg', '<cmd>Neogit<cr>', { desc = 'Open Neogit UI' })
 
@@ -293,10 +299,21 @@ do
 
   -- Add/delete/replace surroundings (brackets, quotes, etc.)
   --
-  -- - saiw) - [S]urround [A]dd [I]nner [W]ord [)]Paren
-  -- - sd'   - [S]urround [D]elete [']quotes
-  -- - sr)'  - [S]urround [R]eplace [)] [']
-  require('mini.surround').setup()
+  -- Coexists with flash.nvim on `s`: surround lives behind `gs` prefix.
+  -- - gsaiw) - [S]urround [A]dd [I]nner [W]ord [)]Paren
+  -- - gsd'   - [S]urround [D]elete [']quotes
+  -- - gsr)'  - [S]urround [R]eplace [)] [']
+  require('mini.surround').setup {
+    mappings = {
+      add = 'gsa',
+      delete = 'gsd',
+      find = 'gsf',
+      find_left = 'gsF',
+      highlight = 'gsh',
+      replace = 'gsr',
+      update_n_lines = 'gsn',
+    },
+  }
 
   -- lualine.nvim is used as statusline (see lua/custom/plugins/lualine.lua)
   -- mini.statusline removed to avoid duplicate statusline conflict.
@@ -340,7 +357,11 @@ do
     gh 'nvim-telescope/telescope.nvim',
     gh 'nvim-telescope/telescope-ui-select.nvim',
   }
-  if vim.fn.executable 'make' == 1 then table.insert(telescope_plugins, gh 'nvim-telescope/telescope-fzf-native.nvim') end
+  if vim.fn.executable 'make' == 1 then
+    table.insert(telescope_plugins, gh 'nvim-telescope/telescope-fzf-native.nvim')
+  else
+    vim.schedule(function() vim.notify_once('telescope-fzf-native skipped: `make` not found (install Build Tools for faster sorting)', vim.log.levels.WARN) end)
+  end
 
   -- NOTE: You can install multiple plugins at once
   vim.pack.add(telescope_plugins)
@@ -657,9 +678,28 @@ do
       },
     },
 
-    tailwindcss = {},
+    tailwindcss = {
+      root_dir = function(bufnr, on_dir)
+        local root = vim.fs.root(bufnr, { 'tailwind.config.js', 'tailwind.config.cjs', 'tailwind.config.mjs', 'tailwind.config.ts', 'postcss.config.js' })
+        if not root then return end
+        on_dir(root)
+      end,
+    },
 
-    stylua = {}, -- Used to format Lua code
+    -- NOTE: stylua is a formatter (via conform), not a language server,
+    -- so it must not be listed here or vim.lsp.enable() will log an
+    -- "invalid config: cmd is nil" error for it.
+
+    jsonls = {},
+    yamlls = {
+      settings = {
+        yaml = {
+          validate = true,
+          hover = true,
+          completion = true,
+        },
+      },
+    },
 
     -- Special Lua Config, as recommended by neovim help docs
     lua_ls = {
@@ -697,34 +737,52 @@ do
   }
 
   vim.pack.add {
+    -- nvim-lspconfig ships the lsp/*.lua server definitions (cmd, filetypes,
+    -- root markers) that vim.lsp.config() merges with. Do NOT remove.
     gh 'neovim/nvim-lspconfig',
     gh 'mason-org/mason.nvim',
-    gh 'mason-org/mason-lspconfig.nvim',
     gh 'WhoIsSethDaniel/mason-tool-installer.nvim',
   }
+  -- blink.cmp added here (setup stays deferred in SECTION 7) so its LSP
+  -- capabilities are on the runtimepath before servers are enabled.
+  vim.pack.add { { src = gh 'saghen/blink.cmp', version = vim.version.range '1.*' } }
+  vim.pack.add { { src = gh 'L3MON4D3/LuaSnip', version = vim.version.range '2.*' } }
+  vim.pack.add { gh 'rafamadriz/friendly-snippets' }
+
+  -- Advertise blink.cmp capabilities to every server (snippet support, etc.).
+  local blink_caps = nil
+  pcall(function() blink_caps = require('blink.cmp').get_lsp_capabilities() end)
+  if blink_caps then vim.lsp.config('*', { capabilities = blink_caps }) end
 
   -- Automatically install LSPs and related tools to stdpath for Neovim
   require('mason').setup {}
 
-  -- Ensure the servers and tools above are installed
-  --
-  -- To check the current status of installed tools and/or manually install
-  -- other tools, you can run
-  --    :Mason
-  --
-  -- You can press `g?` for help in this menu.
-  local ensure_installed = vim.tbl_keys(servers or {})
-  vim.list_extend(ensure_installed, {
+  -- Ensure the servers and tools above are installed.
+  -- NOTE: mason-tool-installer wants Mason package names, not lspconfig names
+  -- (e.g. `typescript-language-server`, not `ts_ls`).
+  local ensure_installed = {
+    'gopls',
+    'pyright',
+    'ruff',
+    'typescript-language-server',
+    'tailwindcss-language-server',
+    'lua-language-server',
+    'json-lsp',
+    'yaml-language-server',
+    'stylua',
     'black',
     'isort',
     'debugpy',
     'js-debug-adapter',
+    'oxlint',
+    'markdownlint',
+    'prettierd',
     -- Go tools
     'gofumpt',
     'goimports',
     'golines',
     'golangci-lint',
-  })
+  }
 
   require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
@@ -750,6 +808,8 @@ do
   end
   local function js_formatters(bufnr)
     if has_biome(bufnr) then return { 'biome' } end
+    -- prettierd hangs on Windows named pipes; use plain prettier there.
+    if vim.fn.has 'win32' == 1 then return { 'prettier' } end
     return { 'prettierd', 'prettier', stop_after_first = true }
   end
 
@@ -780,15 +840,15 @@ do
     formatters_by_ft = {
       lua = { 'stylua' },
       go = { 'goimports', 'gofumpt' },
-      python = { 'ruff_format', 'isort', 'black', stop_after_first = true },
+      python = { 'ruff_organize_imports', 'ruff_format' },
       javascript = js_formatters,
       typescript = js_formatters,
       typescriptreact = js_formatters,
       javascriptreact = js_formatters,
       json = js_formatters,
-      html = { 'prettierd', 'prettier', stop_after_first = true },
-      css = { 'prettierd', 'prettier', stop_after_first = true },
-      markdown = { 'prettierd', 'prettier', stop_after_first = true },
+      html = js_formatters,
+      css = js_formatters,
+      markdown = js_formatters,
     },
   }
 
@@ -800,10 +860,8 @@ end
 -- blink.cmp and luasnip setup
 -- ============================================================
 do
-  vim.pack.add { { src = gh 'L3MON4D3/LuaSnip', version = vim.version.range '2.*' } }
-  vim.pack.add { gh 'rafamadriz/friendly-snippets' }
-  vim.pack.add { { src = gh 'saghen/blink.cmp', version = vim.version.range '1.*' } }
-
+  -- Plugins already added in SECTION 5 (needed early for LSP capabilities).
+  -- Setup stays deferred here.
   -- Defer 28ms blink.cmp.config + 12ms fuzzy download until first InsertEnter
   -- Saves ~45ms on startup, imperceptible (first completion after 1 keystroke)
   vim.api.nvim_create_autocmd('InsertEnter', {
@@ -889,51 +947,45 @@ do
   vim.pack.add { { src = gh 'nvim-treesitter/nvim-treesitter', version = 'main' } }
   vim.pack.add { { src = gh 'windwp/nvim-ts-autotag' } }
 
-  -- Ensure basic parsers are installed
-  local parsers = {
-    'bash',
-    'c',
-    'diff',
-    'html',
-    'lua',
-    'luadoc',
-    'markdown',
-    'markdown_inline',
-    'python',
-    'query',
-    'vim',
-    'vimdoc',
-    -- Go
-    'go',
-    'gomod',
-    'gosum',
-    'gowork',
-    -- JS/TS
-    'javascript',
-    'typescript',
-    'tsx',
-    'jsdoc',
-    -- Data formats
-    'json',
-    'jsonc',
-    'yaml',
-    'toml',
-    -- Web
-    'css',
-    'scss',
-    -- Infra & misc
-    'dockerfile',
-    'sql',
-    'regex',
-    'git_config',
-    'gitignore',
-  }
-  local installed_base = require('nvim-treesitter').get_installed 'parsers'
-  local missing_base = {}
-  for _, p in ipairs(parsers) do
-    if not vim.tbl_contains(installed_base, p) then table.insert(missing_base, p) end
-  end
-  if #missing_base > 0 then pcall(function() require('nvim-treesitter').install(missing_base) end) end
+  -- Parsers install on-demand via the FileType autocmd below (no sync
+  -- network install at startup). Run `:TSUpdate` manually on fresh machines.
+  vim.api.nvim_create_user_command('TSEnsure', function()
+    pcall(function()
+      require('nvim-treesitter').install {
+        'bash',
+        'c',
+        'diff',
+        'html',
+        'lua',
+        'luadoc',
+        'markdown',
+        'markdown_inline',
+        'python',
+        'query',
+        'vim',
+        'vimdoc',
+        'go',
+        'gomod',
+        'gosum',
+        'gowork',
+        'javascript',
+        'typescript',
+        'tsx',
+        'jsdoc',
+        'json',
+        'jsonc',
+        'yaml',
+        'toml',
+        'css',
+        'scss',
+        'dockerfile',
+        'sql',
+        'regex',
+        'git_config',
+        'gitignore',
+      }
+    end)
+  end, { desc = 'Install base treesitter parsers' })
 
   require('nvim-ts-autotag').setup {
     opts = {
