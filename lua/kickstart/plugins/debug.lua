@@ -26,7 +26,13 @@ local function ensure_dap()
   local dapui = require 'dapui'
   require('mason-nvim-dap').setup {
     automatic_installation = true,
-    handlers = {},
+    -- Let nvim-dap-go own the Go/Delve adapter. mason's default delve
+    -- handler uses `dlv` from PATH (missing on this machine) and races
+    -- with dap-go, producing "Debug adapter didn't respond".
+    handlers = {
+      go = function() end,
+      delve = function() end,
+    },
     ensure_installed = { 'delve', 'python', 'js' },
   }
   ---@diagnostic disable-next-line: missing-fields
@@ -71,7 +77,85 @@ local function ensure_dap()
     local direct = vim.fn.stdpath 'data' .. '/mason/packages/delve/dlv.exe'
     if vim.fn.filereadable(direct) == 1 then delve_path = direct end
   end
-  require('dap-go').setup { delve = { path = delve_path, detached = vim.fn.has 'win32' == 0, build_flags = '' } }
+  require('dap-go').setup {
+    delve = {
+      path = delve_path,
+      detached = vim.fn.has 'win32' == 0,
+      build_flags = '',
+      -- Windows + AV can be slow to bind; default 20s trips "didn't respond".
+      initialize_timeout_sec = 30,
+      port = '${port}',
+    },
+  }
+  -- Projects using cmd/ layout have no .go files in the root, so building
+  -- the root fails with "no Go files in ...". Keep dap-go's ${file} /
+  -- ${fileDirname} defaults for "debug this file", and append explicit
+  -- entrypoints as fallback options.
+  dap.configurations.go = dap.configurations.go or {}
+  local has_api_cfg = false
+  for _, c in ipairs(dap.configurations.go) do
+    if c.name == 'Debug API (cmd/api)' then has_api_cfg = true end
+  end
+  if not has_api_cfg then
+    table.insert(dap.configurations.go, { type = 'go', name = 'Debug API (cmd/api)', request = 'launch', program = '${workspaceFolder}/cmd/api' })
+    table.insert(dap.configurations.go, { type = 'go', name = 'Debug Migrate (cmd/migrate)', request = 'launch', program = '${workspaceFolder}/cmd/migrate', args = { 'up' } })
+  end
+  -- Smart Go launcher: debug from ANY file/breakpoint.
+  -- DAP can't infer the binary from a breakpoint alone (breakpoints are just
+  -- addresses), so resolve the program from the current file:
+  --   *_test.go            -> dap-go.debug_test()
+  --   package main dir     -> launch that dir (${fileDirname})
+  --   library dir (internal/*) -> pick the main that imports it (select if >1)
+  _G.__dap_go_smart = function()
+    local dap_go_ok, dap_go = pcall(require, 'dap-go')
+    if not dap_go_ok then
+      dap.continue()
+      return
+    end
+    local file = vim.fn.expand '%:p'
+    if file:match '_test%.go$' then
+      dap_go.debug_test()
+      return
+    end
+    local dir = vim.fn.expand '%:p:h'
+    -- Is current dir a main package? (has package main in any .go file)
+    local is_main = false
+    for _, f in ipairs(vim.fn.globpath(dir, '*.go', false, true)) do
+      local ok, lines = pcall(vim.fn.readfile, f, '', 30)
+      if ok and lines then
+        for _, l in ipairs(lines) do
+          if l:match '^%s*package%s+main' then
+            is_main = true
+            break
+          end
+        end
+      end
+      if is_main then break end
+    end
+    if is_main then
+      dap.run { type = 'go', name = 'Debug current package', request = 'launch', program = dir }
+      return
+    end
+    -- Library file: find runnable mains (cmd/*/main.go, ./main.go).
+    local root = vim.fs.root(0, { 'go.mod', '.git' }) or vim.fn.getcwd()
+    local mains = {}
+    for _, m in ipairs(vim.fn.globpath(root, 'cmd/*/main.go', false, true)) do
+      table.insert(mains, vim.fn.fnamemodify(m, ':h'))
+    end
+    for _, m in ipairs(vim.fn.globpath(root, 'main.go', false, true)) do
+      table.insert(mains, vim.fn.fnamemodify(m, ':h'))
+    end
+    if #mains == 0 then
+      -- No cmd/ layout found: fall back to fileDirname and let delve report.
+      dap.run { type = 'go', name = 'Debug current package', request = 'launch', program = dir }
+    elseif #mains == 1 then
+      dap.run { type = 'go', name = 'Debug ' .. vim.fn.fnamemodify(mains[1], ':~:.') .. ' (from ' .. vim.fn.fnamemodify(file, ':~:.') .. ')', request = 'launch', program = mains[1] }
+    else
+      vim.ui.select(mains, { prompt = 'Debug which main? (breakpoint: ' .. vim.fn.fnamemodify(file, ':t') .. ')' }, function(choice)
+        if choice then dap.run { type = 'go', name = 'Debug ' .. vim.fn.fnamemodify(choice, ':~:.') , request = 'launch', program = choice } end
+      end)
+    end
+  end
   pcall(function()
     local py = require 'custom.plugins.python'
     local venv_py = py and py.find_python_venv and py.find_python_venv() or nil
@@ -133,8 +217,14 @@ end
 -- Basic debugging keymaps (lazy-ensure on first use)
 vim.keymap.set('n', '<F5>', function()
   ensure_dap()
-  require('dap').continue()
-end, { desc = 'Debug: Start/Continue' })
+  -- In Go buffers: resolve the binary from the current file/breakpoint
+  -- (test -> debug_test, main dir -> that dir, lib dir -> pick cmd/*).
+  if vim.bo.filetype == 'go' and _G.__dap_go_smart then
+    _G.__dap_go_smart()
+  else
+    require('dap').continue()
+  end
+end, { desc = 'Debug: Start/Continue (Go: smart from current file)' })
 vim.keymap.set('n', '<F1>', function()
   ensure_dap()
   require('dap').step_into()
@@ -189,3 +279,30 @@ vim.keymap.set('n', '<leader>dT', function()
   ensure_dap()
   require('dap-go').debug_last_test()
 end, { desc = 'Debug: Go last [T]est' })
+-- Simple aliases (requested keymap style: dc/dx/ds).
+-- NOTE: <leader>dt stays as "Go test" above, so toggle-breakpoint lives on
+-- <leader>db (use that, not dt). <leader>du toggles the UI, <leader>dr is REPL.
+vim.keymap.set('n', '<leader>dc', function()
+  ensure_dap()
+  if vim.bo.filetype == 'go' and _G.__dap_go_smart then
+    _G.__dap_go_smart()
+  else
+    require('dap').continue()
+  end
+end, { desc = 'Debug: [C]ontinue' })
+vim.keymap.set('n', '<leader>dx', function()
+  ensure_dap()
+  require('dap').terminate()
+end, { desc = 'Debug: Terminate (kill)' })
+vim.keymap.set('n', '<leader>ds', function()
+  ensure_dap()
+  require('dap').step_over()
+end, { desc = 'Debug: [S]tep over' })
+vim.keymap.set('n', '<leader>di', function()
+  ensure_dap()
+  require('dap').step_into()
+end, { desc = 'Debug: Step [I]nto' })
+vim.keymap.set('n', '<leader>do', function()
+  ensure_dap()
+  require('dap').step_out()
+end, { desc = 'Debug: Step [O]ut' })

@@ -58,6 +58,10 @@
       "rev": "d28a3f70721c79e3c5f6693057ae929f3d9c0a03",
       "src": "https://github.com/lukas-reineke/indent-blankline.nvim"
     },
+    "iron.nvim": {
+      "rev": "0168b419bc7df70cd2d97c2ec8158b6b002450b2",
+      "src": "https://github.com/Vigemus/iron.nvim"
+    },
     "lualine.nvim": {
       "rev": "221ce6b2d999187044529f49da6554a92f740a96",
       "src": "https://github.com/nvim-lualine/lualine.nvim"

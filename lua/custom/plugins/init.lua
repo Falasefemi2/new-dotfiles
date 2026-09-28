@@ -13,6 +13,7 @@ local plugins = {
   'effect-tsgo',
   'flash',
   'go',
+  'iron',
   'lualine',
   'markdown-preview',
   'noice',

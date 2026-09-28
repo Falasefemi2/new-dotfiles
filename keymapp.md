@@ -214,6 +214,33 @@
 | `<leader>cE` | n | Show all TS errors |
 | `<leader>ct` | n | Toggle TS error auto-display |
 
+## REPL (iron.nvim) — `<leader>e` = [E]xecute
+
+> Upstream iron docs use `<space>r` / `<space>s`, but here `<leader>r` is Spectre replace and `<leader>s` is Telescope search, so iron lives under `<leader>e`.
+
+| Keymap | Mode | Description |
+|--------|------|-------------|
+| `<leader>et` | n | Toggle REPL open/closed |
+| `<leader>eR` | n | Restart REPL (`:IronRestart`) |
+| `<leader>ef` | n | Focus REPL (`:IronFocus`) |
+| `<leader>eh` | n | Hide REPL (`:IronHide`) |
+| `<leader>es` | n, x | Send motion / visual selection to REPL |
+| `<leader>el` | n | Send line to REPL |
+| `<leader>ep` | n | Send paragraph to REPL |
+| `<leader>eF` | n | Send whole file to REPL |
+| `<leader>eu` | n | Send until cursor to REPL |
+| `<leader>eb` | n | Send code block (`# %%` aware in Python) |
+| `<leader>en` | n | Send code block and move to next |
+| `<leader>eM` | n | Send marked text to REPL |
+| `<leader>em` | n, x | Mark motion / visual region for REPL |
+| `<leader>eD` | n | Remove REPL mark |
+| `<leader>e<CR>` | n | Send `<CR>` to REPL |
+| `<leader>e<Space>` | n | Interrupt REPL (Ctrl-C) |
+| `<leader>eq` | n | Exit/close REPL |
+| `<leader>eC` | n | Clear REPL screen |
+
+REPLs configured: `sh` (zsh / `$SHELL`, PowerShell on Windows), `powershell`, `python` (project `.venv` aware, `PYTHON_BASIC_REPL=1` for 3.13+), `lua`, `javascript` (node), `typescript` (ts-node). Opens with `view.bottom(40)`. Sends go to nvim-dap REPL when debugging.
+
 ---
 
 *Generated from your Neovim config — 85+ keymaps across all plugins.*
