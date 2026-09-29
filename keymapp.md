@@ -241,6 +241,27 @@
 
 REPLs configured: `sh` (zsh / `$SHELL`, PowerShell on Windows), `powershell`, `python` (project `.venv` aware, `PYTHON_BASIC_REPL=1` for 3.13+), `lua`, `javascript` (node), `typescript` (ts-node). Opens with `view.bottom(40)`. Sends go to nvim-dap REPL when debugging.
 
+## LaTeX (only in .tex/.bib files)
+
+| Keymap | Mode | Description |
+|--------|------|-------------|
+| `<leader>ll` | n | Compile (toggle continuous) |
+| `<leader>lv` | n | View PDF |
+| `<leader>ls` | n | Forward search (sync) |
+| `<leader>lf` | n | Forward search (texlab) |
+| `<leader>lb` | n | Build once (texlab) |
+| `<leader>le` | n | Errors/quickfix |
+| `<leader>lc` | n | Clean aux files |
+| `<leader>lk` | n | Stop compiler |
+| `<leader>lK` | n | Stop all compilers |
+| `<leader>lt` | n | Toggle ToC |
+| `<leader>li` | n | Info/state |
+| `<leader>lr` | n | Reload state |
+
+### LaTeX Snippets (LuaSnip, `tex` filetype)
+
+`doc` document skeleton · `beg` begin/end env (mirrored) · `mk` inline math · `dm` display math · `eq` labeled equation · `frac` fraction · `fig` figure · `tbl` table · `item` itemize · `enum` enumerate · `sec`/`sub`/`subsub` sections · `pkg` usepackage · `cite`/`ref`/`lab` cross-refs · `tbf`/`tit` bold/italic · `href` hyperlink. Complete via blink.cmp, jump with `<tab>`/`<s-tab>`.
+
 ---
 
-*Generated from your Neovim config — 85+ keymaps across all plugins.*
+*Generated from your Neovim config — 95+ keymaps across all plugins.*

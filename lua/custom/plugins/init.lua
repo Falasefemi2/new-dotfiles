@@ -15,6 +15,7 @@ local plugins = {
   'go',
   'iron',
   'lualine',
+  'latex',
   'markdown-preview',
   'noice',
   'pretty-ts-errors',

@@ -231,6 +231,7 @@ do
       { '<leader>c', group = '[C]ode' },
       { '<leader>e', group = '[E]xecute REPL (iron)', mode = { 'n', 'v' } },
       { '<leader>b', group = '[B]uffer' },
+      { '<leader>l', group = '[L]aTeX', mode = { 'n', 'v' } },
       { '<leader>r', group = '[R]eplace', mode = { 'n', 'x' } },
     },
   }
@@ -702,6 +703,33 @@ do
       },
     },
 
+    -- LaTeX (texlab). Heavy lifting for compile/view lives in
+    -- lua/custom/plugins/latex.lua (vimtex); texlab provides
+    -- completion, hover, symbols, diagnostics (chktex) and build.
+    texlab = {
+      settings = {
+        texlab = {
+          build = {
+            executable = 'latexmk',
+            args = { '-pdf', '-interaction=nonstopmode', '-synctex=1', '%f' },
+            onSave = false,
+            forwardSearchAfter = true,
+          },
+          forwardSearch = {
+            executable = vim.fn.has 'win32' == 1 and 'SumatraPDF' or 'zathura',
+            args = vim.fn.has 'win32' == 1 and { '-reuse-instance', '%p', '-forward-search', '%f', '%l' }
+              or { '--synctex-forward', '%l:1:%f', '%p' },
+          },
+          chktex = { onOpenAndSave = true, onEdit = false },
+          diagnosticsDelay = 300,
+          latexFormatter = 'latexindent',
+          latexindent = { modifyLineBreaks = false },
+          bibtexFormatter = 'texlab',
+          formatterLineLength = 120,
+        },
+      },
+    },
+
     -- Special Lua Config, as recommended by neovim help docs
     lua_ls = {
       on_init = function(client)
@@ -770,6 +798,8 @@ do
     'lua-language-server',
     'json-lsp',
     'yaml-language-server',
+    'texlab',
+    'latexindent',
     'stylua',
     'black',
     'isort',
@@ -871,6 +901,7 @@ do
     callback = function()
       require('luasnip').setup {}
       require('luasnip.loaders.from_vscode').lazy_load()
+      pcall(require, 'custom.snippets.latex') -- LaTeX snippets (lazy, zero startup cost)
       require('blink.cmp').setup {
         keymap = {
           -- 'default' (recommended) for mappings similar to built-in completions
@@ -984,6 +1015,8 @@ do
         'regex',
         'git_config',
         'gitignore',
+        'latex',
+        'bibtex',
       }
     end)
   end, { desc = 'Install base treesitter parsers' })
