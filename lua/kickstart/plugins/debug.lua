@@ -98,7 +98,10 @@ local function ensure_dap()
   end
   if not has_api_cfg then
     table.insert(dap.configurations.go, { type = 'go', name = 'Debug API (cmd/api)', request = 'launch', program = '${workspaceFolder}/cmd/api' })
-    table.insert(dap.configurations.go, { type = 'go', name = 'Debug Migrate (cmd/migrate)', request = 'launch', program = '${workspaceFolder}/cmd/migrate', args = { 'up' } })
+    table.insert(
+      dap.configurations.go,
+      { type = 'go', name = 'Debug Migrate (cmd/migrate)', request = 'launch', program = '${workspaceFolder}/cmd/migrate', args = { 'up' } }
+    )
   end
   -- Smart Go launcher: debug from ANY file/breakpoint.
   -- DAP can't infer the binary from a breakpoint alone (breakpoints are just
@@ -149,10 +152,15 @@ local function ensure_dap()
       -- No cmd/ layout found: fall back to fileDirname and let delve report.
       dap.run { type = 'go', name = 'Debug current package', request = 'launch', program = dir }
     elseif #mains == 1 then
-      dap.run { type = 'go', name = 'Debug ' .. vim.fn.fnamemodify(mains[1], ':~:.') .. ' (from ' .. vim.fn.fnamemodify(file, ':~:.') .. ')', request = 'launch', program = mains[1] }
+      dap.run {
+        type = 'go',
+        name = 'Debug ' .. vim.fn.fnamemodify(mains[1], ':~:.') .. ' (from ' .. vim.fn.fnamemodify(file, ':~:.') .. ')',
+        request = 'launch',
+        program = mains[1],
+      }
     else
       vim.ui.select(mains, { prompt = 'Debug which main? (breakpoint: ' .. vim.fn.fnamemodify(file, ':t') .. ')' }, function(choice)
-        if choice then dap.run { type = 'go', name = 'Debug ' .. vim.fn.fnamemodify(choice, ':~:.') , request = 'launch', program = choice } end
+        if choice then dap.run { type = 'go', name = 'Debug ' .. vim.fn.fnamemodify(choice, ':~:.'), request = 'launch', program = choice } end
       end)
     end
   end
@@ -177,7 +185,8 @@ local function ensure_dap()
         executable = { command = 'node', args = { js_debug .. '/js-debug/src/dapDebugServer.js', '${port}', '127.0.0.1' } },
       }
     elseif vim.fn.filereadable(cmd) == 1 then
-      dap2.adapters['pwa-node'] = { type = 'server', host = '127.0.0.1', port = '${port}', executable = { command = 'node', args = { cmd, '${port}', '127.0.0.1' } } }
+      dap2.adapters['pwa-node'] =
+        { type = 'server', host = '127.0.0.1', port = '${port}', executable = { command = 'node', args = { cmd, '${port}', '127.0.0.1' } } }
     else
       local bin = vim.fn.stdpath 'data' .. '/mason/bin/js-debug-adapter'
       if vim.fn.has 'win32' == 1 then

@@ -175,9 +175,12 @@ vim.api.nvim_create_autocmd('FileType', {
   pattern = { 'typescript', 'typescriptreact', 'javascript', 'javascriptreact' },
   callback = function(event)
     local buf = event.buf
-    vim.keymap.set('n', '<leader>co', function()
-      vim.lsp.buf.code_action { context = { only = { 'source.organizeImports' } }, apply = true }
-    end, { buffer = buf, desc = '[C]ode [O]rganize imports' })
+    vim.keymap.set(
+      'n',
+      '<leader>co',
+      function() vim.lsp.buf.code_action { context = { only = { 'source.organizeImports' } }, apply = true } end,
+      { buffer = buf, desc = '[C]ode [O]rganize imports' }
+    )
     vim.keymap.set('n', '<leader>cT', function() vim.cmd 'split | terminal npm test -- --watchAll=false' end, { buffer = buf, desc = '[C]ode [T]est (npm)' })
   end,
 })

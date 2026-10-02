@@ -7,7 +7,7 @@
 ## Structure
 
 ```
-init.lua                 # ~100 lines: bootstrap + require('config.*')
+init.lua                 # ~1100 lines: bootstrap + plugin sections (vim.pack)
 lua/config/
   options.lua            # vim.o, diagnostics, undo
   keymaps.lua            # core <leader> maps (no plugin deps)
@@ -31,7 +31,7 @@ nvim-pack-lock.json      # Tracked for reproducible installs
 | Core | `guess-indent`, `which-key`, `todo-comments`, `mini.ai/surround/bufremove` |
 | UI | `catppuccin`, `lualine`, `dashboard-nvim`, `noice`, `nvim-notify`, `smear-cursor`, `statuscolumn`, `colorizer` |
 | Nav | `telescope`, `neo-tree`, `flash` |
-| LSP | `nvim-lspconfig`, `mason`, `mason-lspconfig`, `mason-tool-installer`, `fidget`, `conform`, `blink.cmp`, `LuaSnip` |
+| LSP | `nvim-lspconfig`, `mason`, `mason-tool-installer`, `fidget`, `conform`, `blink.cmp`, `LuaSnip` |
 | Treesitter | `nvim-treesitter:main`, `nvim-ts-autotag` |
 | Git | `gitsigns`, `neogit`, `diffview` |
 | Lang | `gopls`, `pyright/ruff`, `ts_ls` + `effect_tsgo`, `tailwindcss`, `lua_ls` |
@@ -42,7 +42,7 @@ Run `:lua vim.pack.update(nil, {offline=true})` to inspect, `:lua vim.pack.updat
 
 ## Keymaps
 
-Leader is `<Space>`. See `keymapp.md` for full table (85+ maps) or `:Telescope keymaps`.
+Leader is `<Space>`. See `keymapp.md` for full table (95+ maps) or `:Telescope keymaps`.
 
 Notables: `\- Neotree reveal`, `<leader>,` buffers, `<leader>sf/sg/` Telescope, `gr*` LSP, `<leader>db/dB` DAP breakpoint, `<leader>Ss/Sl` session, `<leader>mp` markdown preview, `s` flash jump.
 
