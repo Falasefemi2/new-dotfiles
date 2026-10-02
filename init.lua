@@ -154,9 +154,7 @@ do
         if vim.fn.has 'win32' ~= 1 and vim.fn.executable 'make' == 1 then
           run_build(name, { 'make', 'install_jsregexp' }, ev.data.path)
         elseif vim.fn.has 'win32' == 1 then
-          vim.schedule(function()
-            vim.notify_once('LuaSnip: jsregexp skipped on Windows; regex-based snippets will not expand', vim.log.levels.WARN)
-          end)
+          vim.schedule(function() vim.notify_once('LuaSnip: jsregexp skipped on Windows; regex-based snippets will not expand', vim.log.levels.WARN) end)
         end
         return
       end
@@ -717,8 +715,7 @@ do
           },
           forwardSearch = {
             executable = vim.fn.has 'win32' == 1 and 'SumatraPDF' or 'zathura',
-            args = vim.fn.has 'win32' == 1 and { '-reuse-instance', '%p', '-forward-search', '%f', '%l' }
-              or { '--synctex-forward', '%l:1:%f', '%p' },
+            args = vim.fn.has 'win32' == 1 and { '-reuse-instance', '%p', '-forward-search', '%f', '%l' } or { '--synctex-forward', '%l:1:%f', '%p' },
           },
           chktex = { onOpenAndSave = true, onEdit = false },
           diagnosticsDelay = 300,
@@ -801,13 +798,12 @@ do
     'texlab',
     'latexindent',
     'stylua',
-    'black',
-    'isort',
     'debugpy',
     'js-debug-adapter',
     'oxlint',
     'markdownlint',
     'prettierd',
+    'prettier', -- conform's `prettier` formatter on Windows (prettierd has no `prettier` binary)
     -- Go tools
     'gofumpt',
     'goimports',
@@ -849,7 +845,7 @@ do
     format_on_save = function(bufnr)
       -- You can specify filetypes to autoformat on save here:
       local enabled_filetypes = {
-        -- lua = true,
+        lua = true,
         python = true,
         go = true,
         typescript = true,
@@ -982,43 +978,45 @@ do
   -- Parsers install on-demand via the FileType autocmd below (no sync
   -- network install at startup). Run `:TSUpdate` manually on fresh machines.
   vim.api.nvim_create_user_command('TSEnsure', function()
-    pcall(function()
-      require('nvim-treesitter').install {
-        'bash',
-        'c',
-        'diff',
-        'html',
-        'lua',
-        'luadoc',
-        'markdown',
-        'markdown_inline',
-        'python',
-        'query',
-        'vim',
-        'vimdoc',
-        'go',
-        'gomod',
-        'gosum',
-        'gowork',
-        'javascript',
-        'typescript',
-        'tsx',
-        'jsdoc',
-        'json',
-        'jsonc',
-        'yaml',
-        'toml',
-        'css',
-        'scss',
-        'dockerfile',
-        'sql',
-        'regex',
-        'git_config',
-        'gitignore',
-        'latex',
-        'bibtex',
-      }
-    end)
+    pcall(
+      function()
+        require('nvim-treesitter').install {
+          'bash',
+          'c',
+          'diff',
+          'html',
+          'lua',
+          'luadoc',
+          'markdown',
+          'markdown_inline',
+          'python',
+          'query',
+          'vim',
+          'vimdoc',
+          'go',
+          'gomod',
+          'gosum',
+          'gowork',
+          'javascript',
+          'typescript',
+          'tsx',
+          'jsdoc',
+          'json',
+          'jsonc',
+          'yaml',
+          'toml',
+          'css',
+          'scss',
+          'dockerfile',
+          'sql',
+          'regex',
+          'git_config',
+          'gitignore',
+          'latex',
+          'bibtex',
+        }
+      end
+    )
   end, { desc = 'Install base treesitter parsers' })
 
   require('nvim-ts-autotag').setup {
