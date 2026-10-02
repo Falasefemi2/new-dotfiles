@@ -44,7 +44,11 @@ local function replace_word()
     vim.notify('No word under cursor', vim.log.levels.WARN)
     return
   end
-  vim.cmd('%s/\\V\\<' .. vim.fn.escape(word, '/') .. '\\>/')
+  -- Leave the :s on the cmdline (no <CR>) so the user types the replacement.
+  -- Executing it directly would DELETE every match: a trailing "/" with no
+  -- replacement is an empty replacement.
+  local cmd = ':%s/\\V\\<' .. vim.fn.escape(word, '/\\') .. '\\>/g'
+  vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes(cmd, true, false, true), 'n', true)
 end
 
 vim.keymap.set('n', '<leader>rr', replace_word, { desc = '[R]eplace word under cursor (whole file)' })
@@ -53,5 +57,6 @@ vim.keymap.set('x', '<leader>rr', function()
   local word = get_selected_text()
   word = word:gsub('^%s+', ''):gsub('%s+$', '')
   if word == '' then return end
-  vim.cmd("'<,'>s/\\V\\<" .. vim.fn.escape(word, '/') .. '\\>/')
+  local cmd = "'<,'>s/\\V\\<" .. vim.fn.escape(word, '/\\') .. '\\>/g'
+  vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes(cmd, true, false, true), 'n', true)
 end, { desc = '[R]eplace selection text' })
