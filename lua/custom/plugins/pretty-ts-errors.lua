@@ -1,5 +1,12 @@
 vim.pack.add { 'https://github.com/youyoumu/pretty-ts-errors.nvim' }
-require('pretty-ts-errors').setup {}
+
+-- Defer setup past first render (VimEnter + schedule), same pattern as lualine.
+vim.api.nvim_create_autocmd('VimEnter', {
+  group = vim.api.nvim_create_augroup('lazy-pretty-ts-errors', { clear = true }),
+  callback = function()
+    vim.schedule(function() require('pretty-ts-errors').setup {} end)
+  end,
+})
 
 -- pretty-ts-errors only understands ts_ls; Effect projects run effect_tsgo.
 local function use_ts_pretty(fn)
