@@ -228,6 +228,7 @@ do
       { '<leader>x', group = 'Trouble' },
       { '<leader>c', group = '[C]ode' },
       { '<leader>e', group = '[E]xecute REPL (iron)', mode = { 'n', 'v' } },
+      { '<leader>u', group = '[U]I / Colors' },
       { '<leader>b', group = '[B]uffer' },
       { '<leader>l', group = '[L]aTeX', mode = { 'n', 'v' } },
       { '<leader>r', group = '[R]eplace', mode = { 'n', 'x' } },
@@ -242,37 +243,12 @@ do
   }
   vim.keymap.set('n', '<leader>gg', '<cmd>Neogit<cr>', { desc = 'Open Neogit UI' })
 
-  -- [[ Colorscheme ]]
-  -- Catppuccin (mocha by default, latte on light background).
-  -- Change flavour with `:Catppuccin mocha|macchiato|frappe|latte`.
-  vim.pack.add { { src = gh 'catppuccin/nvim', name = 'catppuccin' } }
-
-  require('catppuccin').setup {
-    flavour = 'mocha',
-    background = { light = 'latte', dark = 'mocha' },
-    transparent_background = false,
-    term_colors = true,
-    integrations = {
-      cmp = true,
-      gitsigns = true,
-      mason = true,
-      mini = { enabled = true },
-      native_lsp = { enabled = true },
-      neotree = true,
-      noice = true,
-      notify = true,
-      nvim_surround = true,
-      telescope = { enabled = true },
-      treesitter = true,
-      which_key = true,
-      dap = true,
-      dap_ui = true,
-      indent_blankline = { enabled = true },
-    },
-  }
-
-  -- Load the colorscheme here.
-  vim.cmd.colorscheme 'catppuccin'
+  -- [[ Colorscheme + theme switcher ]]
+  -- Owned by lua/config/colors.lua: vivid tokyonight-night default,
+  -- 12-theme curated set, <leader>u picker/cycle/random/transparent/accent
+  -- keymaps, persistence, and ColorScheme refresh. Applied synchronously
+  -- here so there is no flash of the default theme on startup.
+  require 'config.colors'
 
   -- Highlight todo, notes, etc in comments
   vim.pack.add { gh 'folke/todo-comments.nvim' }

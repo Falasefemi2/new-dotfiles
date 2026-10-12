@@ -20,10 +20,9 @@ vim.api.nvim_create_autocmd('VimEnter', {
       require('lualine').setup {
         options = {
           icons_enabled = true,
-          -- 'catppuccin-nvim' follows the active flavour (mocha/latte/...).
-          -- Plain 'catppuccin' has no lualine theme module and triggers
-          -- :LualineNotices ("Theme `catppuccin` not found").
-          theme = 'catppuccin-nvim',
+          -- `auto` follows the active colorscheme; config.colors refreshes
+          -- lualine on every ColorScheme event so nothing renders stale.
+          theme = 'auto',
           component_separators = { left = '│', right = '│' },
           section_separators = { left = '', right = '' },
           disabled_filetypes = {
