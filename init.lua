@@ -366,39 +366,52 @@ do
   -- NOTE: You can install multiple plugins at once
   vim.pack.add(telescope_plugins)
 
-  -- See `:help telescope` and `:help telescope.setup()`
-  require('telescope').setup {
-    -- You can put your default mappings / updates / etc. in here
-    --  All the info you're looking for is in `:help telescope.setup()`
-    --
-    -- defaults = {
-    --   mappings = {
-    --     i = { ['<c-enter>'] = 'to_fuzzy_refine' },
-    --   },
-    -- },
-    -- pickers = {}
-    extensions = {
-      ['ui-select'] = { require('telescope.themes').get_dropdown() },
-    },
-  }
+  -- Lazy: `require('telescope.*')` costs ~400ms (pickers+config+actions),
+  -- so setup runs on first picker use instead of at startup.
+  local _telescope_setup = false
+  local function ensure_telescope()
+    if _telescope_setup then return end
+    _telescope_setup = true
+    -- See `:help telescope` and `:help telescope.setup()`
+    require('telescope').setup {
+      -- You can put your default mappings / updates / etc. in here
+      --  All the info you're looking for is in `:help telescope.setup()`
+      --
+      -- defaults = {
+      --   mappings = {
+      --     i = { ['<c-enter>'] = 'to_fuzzy_refine' },
+      --   },
+      -- },
+      -- pickers = {}
+      extensions = {
+        ['ui-select'] = { require('telescope.themes').get_dropdown() },
+      },
+    }
 
-  -- Enable Telescope extensions if they are installed
-  pcall(require('telescope').load_extension, 'fzf')
-  pcall(require('telescope').load_extension, 'ui-select')
+    -- Enable Telescope extensions if they are installed
+    pcall(require('telescope').load_extension, 'fzf')
+    pcall(require('telescope').load_extension, 'ui-select')
+  end
 
   -- See `:help telescope.builtin`
-  local builtin = require 'telescope.builtin'
-  vim.keymap.set('n', '<leader>sh', builtin.help_tags, { desc = '[S]earch [H]elp' })
-  vim.keymap.set('n', '<leader>sk', builtin.keymaps, { desc = '[S]earch [K]eymaps' })
-  vim.keymap.set('n', '<leader>sf', builtin.find_files, { desc = '[S]earch [F]iles' })
-  vim.keymap.set('n', '<leader>ss', builtin.builtin, { desc = '[S]earch [S]elect Telescope' })
-  vim.keymap.set({ 'n', 'v' }, '<leader>sw', builtin.grep_string, { desc = '[S]earch current [W]ord' })
-  vim.keymap.set('n', '<leader>sg', builtin.live_grep, { desc = '[S]earch by [G]rep' })
-  vim.keymap.set('n', '<leader>sd', builtin.diagnostics, { desc = '[S]earch [D]iagnostics' })
-  vim.keymap.set('n', '<leader>sr', builtin.resume, { desc = '[S]earch [R]esume' })
-  vim.keymap.set('n', '<leader>s.', builtin.oldfiles, { desc = '[S]earch Recent Files ("." for repeat)' })
-  vim.keymap.set('n', '<leader>sc', builtin.commands, { desc = '[S]earch [C]ommands' })
-  vim.keymap.set('n', '<leader>,', builtin.buffers, { desc = '[,] Find existing buffers' })
+  ---@param name string
+  local function tb(name)
+    return function(...)
+      ensure_telescope()
+      return require('telescope.builtin')[name](...)
+    end
+  end
+  vim.keymap.set('n', '<leader>sh', tb 'help_tags', { desc = '[S]earch [H]elp' })
+  vim.keymap.set('n', '<leader>sk', tb 'keymaps', { desc = '[S]earch [K]eymaps' })
+  vim.keymap.set('n', '<leader>sf', tb 'find_files', { desc = '[S]earch [F]iles' })
+  vim.keymap.set('n', '<leader>ss', tb 'builtin', { desc = '[S]earch [S]elect Telescope' })
+  vim.keymap.set({ 'n', 'v' }, '<leader>sw', tb 'grep_string', { desc = '[S]earch current [W]ord' })
+  vim.keymap.set('n', '<leader>sg', tb 'live_grep', { desc = '[S]earch by [G]rep' })
+  vim.keymap.set('n', '<leader>sd', tb 'diagnostics', { desc = '[S]earch [D]iagnostics' })
+  vim.keymap.set('n', '<leader>sr', tb 'resume', { desc = '[S]earch [R]esume' })
+  vim.keymap.set('n', '<leader>s.', tb 'oldfiles', { desc = '[S]earch Recent Files ("." for repeat)' })
+  vim.keymap.set('n', '<leader>sc', tb 'commands', { desc = '[S]earch [C]ommands' })
+  vim.keymap.set('n', '<leader>,', tb 'buffers', { desc = '[,] Find existing buffers' })
 
   -- Add Telescope-based LSP pickers when an LSP attaches to a buffer.
   -- If you later switch picker plugins, this is where to update these mappings.
@@ -406,7 +419,8 @@ do
     group = vim.api.nvim_create_augroup('telescope-lsp-attach', { clear = true }),
     callback = function(event)
       local buf = event.buf
-
+      ensure_telescope()
+      local builtin = require 'telescope.builtin'
       -- Find references for the word under your cursor.
       vim.keymap.set('n', 'grr', builtin.lsp_references, { buffer = buf, desc = '[G]oto [R]eferences' })
 
@@ -436,6 +450,8 @@ do
 
   -- Override default behavior and theme when searching
   vim.keymap.set('n', '<leader>/', function()
+    ensure_telescope()
+    local builtin = require 'telescope.builtin'
     -- You can pass additional configuration to Telescope to change the theme, layout, etc.
     builtin.current_buffer_fuzzy_find(require('telescope.themes').get_dropdown {
       winblend = 10,
@@ -449,7 +465,8 @@ do
     'n',
     '<leader>s/',
     function()
-      builtin.live_grep {
+      ensure_telescope()
+      require('telescope.builtin').live_grep {
         grep_open_files = true,
         prompt_title = 'Live Grep in Open Files',
       }
@@ -458,7 +475,10 @@ do
   )
 
   -- Shortcut for searching your Neovim configuration files
-  vim.keymap.set('n', '<leader>sn', function() builtin.find_files { cwd = vim.fn.stdpath 'config' } end, { desc = '[S]earch [N]eovim files' })
+  vim.keymap.set('n', '<leader>sn', function()
+    ensure_telescope()
+    require('telescope.builtin').find_files { cwd = vim.fn.stdpath 'config' }
+  end, { desc = '[S]earch [N]eovim files' })
 end
 
 -- ============================================================
@@ -492,9 +512,14 @@ do
   -- If you're wondering about lsp vs treesitter, you can check out the wonderfully
   -- and elegantly composed help section, `:help lsp-vs-treesitter`
 
-  -- Useful status updates for LSP.
+  -- Useful status updates for LSP. Lazy: fidget costs ~270ms, only
+  -- needed once a language server actually attaches to a buffer.
   vim.pack.add { gh 'j-hui/fidget.nvim' }
-  require('fidget').setup {}
+  vim.api.nvim_create_autocmd('LspAttach', {
+    group = vim.api.nvim_create_augroup('lazy-fidget', { clear = true }),
+    once = true,
+    callback = function() require('fidget').setup {} end,
+  })
 
   --  This function gets run when an LSP attaches to a particular buffer.
   --    That is to say, every time a new file is opened that is associated with
@@ -780,12 +805,9 @@ do
   pcall(function() blink_caps = require('blink.cmp').get_lsp_capabilities() end)
   if blink_caps then vim.lsp.config('*', { capabilities = blink_caps }) end
 
-  -- Automatically install LSPs and related tools to stdpath for Neovim
-  require('mason').setup {}
-
-  -- Ensure the servers and tools above are installed.
-  -- NOTE: mason-tool-installer wants Mason package names, not lspconfig names
-  -- (e.g. `typescript-language-server`, not `ts_ls`).
+  -- Mason setup is deferred past first render: nothing during startup needs
+  -- the registry, and `ensure_installed` does async installs anyway.
+  -- `:Mason` itself is defined by mason's plugin file, so it stays available.
   local ensure_installed = {
     'gopls',
     'pyright',
@@ -810,8 +832,20 @@ do
     'golines',
     'golangci-lint',
   }
+  vim.api.nvim_create_autocmd('VimEnter', {
+    group = vim.api.nvim_create_augroup('lazy-mason', { clear = true }),
+    callback = function()
+      vim.schedule(function()
+        -- Automatically install LSPs and related tools to stdpath for Neovim
+        require('mason').setup {}
 
-  require('mason-tool-installer').setup { ensure_installed = ensure_installed }
+        -- Ensure the servers and tools above are installed.
+        -- NOTE: mason-tool-installer wants Mason package names, not lspconfig names
+        -- (e.g. `typescript-language-server`, not `ts_ls`).
+        require('mason-tool-installer').setup { ensure_installed = ensure_installed }
+      end)
+    end,
+  })
 
   for name, server in pairs(servers) do
     vim.lsp.config(name, server)
@@ -1019,18 +1053,41 @@ do
     )
   end, { desc = 'Install base treesitter parsers' })
 
-  require('nvim-ts-autotag').setup {
-    opts = {
-      enable_close = true,
-      enable_rename = true,
-      enable_close_on_slash = false,
+  -- Lazy: nvim-ts-autotag costs ~240ms (module + internal requires) and is
+  -- only needed in markup/JSX buffers. Setup runs on the first such file.
+  vim.api.nvim_create_autocmd('FileType', {
+    group = vim.api.nvim_create_augroup('lazy-ts-autotag', { clear = true }),
+    pattern = {
+      'html',
+      'javascript',
+      'javascriptreact',
+      'typescript',
+      'typescriptreact',
+      'tsx',
+      'jsx',
+      'vue',
+      'svelte',
+      'astro',
+      'xml',
+      'php',
+      'markdown',
     },
-    per_filetype = {
-      html = {
-        enable_close = false,
-      },
-    },
-  }
+    once = true,
+    callback = function()
+      require('nvim-ts-autotag').setup {
+        opts = {
+          enable_close = true,
+          enable_rename = true,
+          enable_close_on_slash = false,
+        },
+        per_filetype = {
+          html = {
+            enable_close = false,
+          },
+        },
+      }
+    end,
+  })
 
   ---@param buf integer
   ---@param language string

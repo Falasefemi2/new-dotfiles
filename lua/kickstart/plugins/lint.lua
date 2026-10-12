@@ -2,16 +2,24 @@
 
 vim.pack.add { 'https://github.com/mfussenegger/nvim-lint' }
 
-local lint = require 'lint'
-lint.linters_by_ft = {
-  markdown = { 'markdownlint' }, -- Make sure to install `markdownlint` via mason / npm
-  python = { 'ruff' },
-  go = { 'golangci_lint' },
-  javascript = { 'oxlint' },
-  javascriptreact = { 'oxlint' },
-  typescript = { 'oxlint' },
-  typescriptreact = { 'oxlint' },
-}
+-- Lazy: `require('lint')` at startup forces the module (and its linter
+-- resolution) onto the critical path. Linters are configured on first use.
+local _lint_configured = false
+local function ensure_lint()
+  if _lint_configured then return require 'lint' end
+  _lint_configured = true
+  local lint = require 'lint'
+  lint.linters_by_ft = {
+    markdown = { 'markdownlint' }, -- Make sure to install `markdownlint` via mason / npm
+    python = { 'ruff' },
+    go = { 'golangci_lint' },
+    javascript = { 'oxlint' },
+    javascriptreact = { 'oxlint' },
+    typescript = { 'oxlint' },
+    typescriptreact = { 'oxlint' },
+  }
+  return lint
+end
 
 -- To allow other plugins to add linters to require('lint').linters_by_ft,
 -- instead set linters_by_ft like this:
@@ -36,7 +44,6 @@ lint.linters_by_ft = {
 -- You can disable the default linters by setting their filetypes to nil:
 -- lint.linters_by_ft['clojure'] = nil
 -- lint.linters_by_ft['dockerfile'] = nil
--- lint.linters_by_ft['inko'] = nil
 -- lint.linters_by_ft['janet'] = nil
 -- lint.linters_by_ft['json'] = nil
 -- lint.linters_by_ft['markdown'] = nil
@@ -54,6 +61,9 @@ vim.api.nvim_create_autocmd({ 'BufEnter', 'BufWritePost', 'InsertLeave' }, {
     -- Only run the linter in buffers that you can modify in order to
     -- avoid superfluous noise, notably within the handy LSP pop-ups that
     -- describe the hovered symbol using Markdown.
-    if vim.bo.modifiable then pcall(lint.try_lint) end
+    if vim.bo.modifiable then
+      local lint = ensure_lint()
+      pcall(lint.try_lint)
+    end
   end,
 })

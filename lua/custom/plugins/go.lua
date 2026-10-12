@@ -1,12 +1,9 @@
 -- go.lua
 -- Go-specific helpers: auto-organize imports, test runner, and lint registration
 
--- Register golangci-lint for Go files with nvim-lint
-pcall(function()
-  local lint = require 'lint'
-  lint.linters_by_ft = lint.linters_by_ft or {}
-  lint.linters_by_ft['go'] = lint.linters_by_ft['go'] or { 'golangci_lint' }
-end)
+-- NOTE: golangci-lint for Go files is registered centrally in
+-- kickstart.plugins.lint (`lint.linters_by_ft.go`), so there is no
+-- duplicate registration here.
 
 -- Import organization is handled by conform's goimports+gofumpt on save.
 -- The old gopls `source.organizeImports` BufWritePre (sync, up to 800ms per
