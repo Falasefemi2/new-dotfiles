@@ -1,7 +1,7 @@
 -- lua/config/colors.lua
 -- Self-contained theme manager for a vim.pack-based config.
 --
--- - Curated set of 12 vivid themes. All are *registered* with `vim.pack.add`
+-- - Curated set of 22 vivid themes. All are *registered* with `vim.pack.add`
 --   at startup (cheap: no setup runs), but only the active theme is
 --   configured + applied, so startup stays fast. Switching to a theme whose
 --   plugin is present but not yet sourced first runs `:packadd`.
@@ -117,6 +117,81 @@ local THEMES = {
     end,
   },
   { label = 'gruvbox-material', pack = 'gruvbox-material', colorscheme = 'gruvbox-material' },
+  {
+    label = 'gruvbox',
+    pack = 'gruvbox',
+    colorscheme = 'gruvbox',
+    setup = function(transparent)
+      vim.o.background = 'dark'
+      require('gruvbox').setup { contrast = 'hard', transparent_mode = transparent }
+    end,
+  },
+  {
+    label = 'moonfly',
+    pack = 'moonfly',
+    colorscheme = 'moonfly',
+    setup = function(transparent) vim.g.moonflyTransparent = transparent end,
+  },
+  {
+    label = 'nightfly',
+    pack = 'nightfly',
+    colorscheme = 'nightfly',
+    setup = function(transparent) vim.g.nightflyTransparent = transparent end,
+  },
+  {
+    label = 'vague',
+    pack = 'vague',
+    colorscheme = 'vague',
+    setup = function(transparent) require('vague').setup { transparent = transparent } end,
+  },
+  {
+    label = 'nordic',
+    pack = 'nordic',
+    colorscheme = 'nordic',
+    setup = function(transparent)
+      require('nordic').setup { transparent = { bg = transparent, float = transparent } }
+    end,
+  },
+  {
+    label = 'melange',
+    pack = 'melange',
+    colorscheme = 'melange',
+    setup = function() vim.o.background = 'dark' end,
+  },
+  {
+    label = 'evergarden',
+    pack = 'evergarden',
+    colorscheme = 'evergarden',
+    setup = function(transparent)
+      require('evergarden').setup {
+        theme = { variant = 'fall', accent = 'green' },
+        editor = { transparent_background = transparent },
+      }
+    end,
+  },
+  {
+    label = 'onenord',
+    pack = 'onenord',
+    colorscheme = 'onenord',
+    setup = function(transparent) require('onenord').setup { disable = { background = transparent } } end,
+  },
+  {
+    label = 'zenbones',
+    pack = 'zenbones',
+    colorscheme = 'zenbones',
+    setup = function()
+      vim.o.background = 'dark'
+      vim.g.zenbones_compat = 1 -- run without the optional lush.nvim dependency
+    end,
+  },
+  {
+    label = 'modus-vivendi',
+    pack = 'modus-themes',
+    colorscheme = 'modus_vivendi',
+    setup = function(transparent)
+      require('modus-themes').setup { style = 'modus_vivendi', transparent = transparent }
+    end,
+  },
 }
 
 ---@param repo string
@@ -138,6 +213,16 @@ pcall(vim.pack.add, {
   { src = gh 'Mofiqul/vscode.nvim', name = 'vscode-nvim' },
   { src = gh 'neanias/everforest-nvim', name = 'everforest' },
   { src = gh 'sainnhe/gruvbox-material', name = 'gruvbox-material' },
+  { src = gh 'ellisonleao/gruvbox.nvim', name = 'gruvbox' },
+  { src = gh 'bluz71/vim-moonfly-colors', name = 'moonfly' },
+  { src = gh 'bluz71/vim-nightfly-colors', name = 'nightfly' },
+  { src = gh 'vague-theme/vague.nvim', name = 'vague' },
+  { src = gh 'AlexvZyl/nordic.nvim', name = 'nordic' },
+  { src = gh 'savq/melange-nvim', name = 'melange' },
+  { src = gh 'everviolet/nvim', name = 'evergarden' },
+  { src = gh 'rmehri01/onenord.nvim', name = 'onenord' },
+  { src = gh 'zenbones-theme/zenbones.nvim', name = 'zenbones' },
+  { src = gh 'miikanissi/modus-themes.nvim', name = 'modus-themes' },
 })
 
 local STATE_FILE = vim.fn.stdpath 'data' .. '/colorscheme.json'
