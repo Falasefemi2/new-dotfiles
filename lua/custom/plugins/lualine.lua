@@ -11,8 +11,8 @@ local function lsp_status()
   return '󰒋 ' .. table.concat(client_names, ', ')
 end
 
--- Defer 12ms lualine + 14ms devicons past first render (~112ms total)
--- Statusline appears <50ms after UIEnter, imperceptible
+-- Defer lualine past first render (statusline appears <50ms after UIEnter).
+-- Icons resolve through mini.icons (mocked as nvim-web-devicons).
 vim.api.nvim_create_autocmd('VimEnter', {
   group = vim.api.nvim_create_augroup('lazy-lualine', { clear = true }),
   callback = function()

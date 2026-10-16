@@ -201,12 +201,10 @@ do
   vim.pack.add { gh 'NMAC427/guess-indent.nvim' }
   require('guess-indent').setup {}
 
-  -- Because lua is a real programming language, you can also have some logic to your installation -
-  -- like only installing a plugin if a condition is met.
-  --
-  -- Here we only install `nvim-web-devicons` (which adds pretty icons) if we have a Nerd Font,
-  -- since otherwise the icons won't display properly.
-  if vim.g.have_nerd_font then vim.pack.add { gh 'nvim-tree/nvim-web-devicons' } end
+  -- Icons come from `mini.icons` (part of mini.nvim, configured in SECTION 3),
+  -- not `nvim-web-devicons`. `MiniIcons.mock_nvim_web_devicons()` shims the
+  -- devicons API, so plugins written against it (blink.cmp, lualine, neo-tree,
+  -- trouble, ...) transparently use mini.icons - no separate install needed.
 
   -- Gitsigns is configured in kickstart.plugins.gitsigns
 
@@ -231,6 +229,8 @@ do
       { '<leader>u', group = '[U]I / Colors' },
       { '<leader>b', group = '[B]uffer' },
       { '<leader>l', group = '[L]aTeX', mode = { 'n', 'v' } },
+      { '<leader>m', group = '[M]arks / [M]arkdown' },
+      { '<leader>H', group = '[H]TTP' },
       { '<leader>r', group = '[R]eplace', mode = { 'n', 'x' } },
     },
   }
@@ -245,7 +245,7 @@ do
 
   -- [[ Colorscheme + theme switcher ]]
   -- Owned by lua/config/colors.lua: vivid tokyonight-night default,
-  -- 12-theme curated set, <leader>u picker/cycle/random/transparent/accent
+  -- 22-theme curated set, <leader>u picker/cycle/random/transparent/accent
   -- keymaps, persistence, and ColorScheme refresh. Applied synchronously
   -- here so there is no flash of the default theme on startup.
   require 'config.colors'
@@ -257,6 +257,12 @@ do
   -- [[ mini.nvim ]]
   --  A collection of various small independent plugins/modules
   vim.pack.add { gh 'nvim-mini/mini.nvim' }
+
+  -- Icons for files, extensions, filetypes, LSP kinds, git, OS, diagnostics.
+  -- Replaces nvim-web-devicons: the mock below registers itself under that
+  -- module name, so anything that requires it gets mini.icons instead.
+  require('mini.icons').setup()
+  if vim.g.have_nerd_font then MiniIcons.mock_nvim_web_devicons() end
 
   -- Better Around/Inside textobjects
   --
@@ -876,7 +882,7 @@ do
     -- You can also specify external formatters in here.
     formatters_by_ft = {
       lua = { 'stylua' },
-      go = { 'goimports', 'gofumpt' },
+      go = { 'goimports', 'gofumpt', 'golines' },
       python = { 'ruff_organize_imports', 'ruff_format' },
       javascript = js_formatters,
       typescript = js_formatters,
@@ -1024,6 +1030,7 @@ do
           'gitignore',
           'latex',
           'bibtex',
+          'http',
         }
       end
     )

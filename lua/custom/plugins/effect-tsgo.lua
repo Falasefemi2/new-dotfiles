@@ -169,18 +169,5 @@ vim.api.nvim_create_user_command('EffectTsgoRestart', function()
   vim.defer_fn(function() vim.cmd 'edit' end, 100)
 end, { desc = 'Restart effect_tsgo LSP' })
 
--- TS/JS helpers mirroring the Go workflow: organize imports + npm test.
-vim.api.nvim_create_autocmd('FileType', {
-  group = vim.api.nvim_create_augroup('ts-keymaps', { clear = true }),
-  pattern = { 'typescript', 'typescriptreact', 'javascript', 'javascriptreact' },
-  callback = function(event)
-    local buf = event.buf
-    vim.keymap.set(
-      'n',
-      '<leader>co',
-      function() vim.lsp.buf.code_action { context = { only = { 'source.organizeImports' } }, apply = true } end,
-      { buffer = buf, desc = '[C]ode [O]rganize imports' }
-    )
-    vim.keymap.set('n', '<leader>cT', function() vim.cmd 'split | terminal npm test -- --watchAll=false' end, { buffer = buf, desc = '[C]ode [T]est (npm)' })
-  end,
-})
+-- TS/JS buffer keymaps (organize imports, test runner, run package script)
+-- live in custom.plugins.node so this file stays focused on the Effect LSP.

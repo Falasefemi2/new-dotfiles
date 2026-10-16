@@ -29,8 +29,9 @@ local function ensure_dap()
     -- Let nvim-dap-go own the Go/Delve adapter. mason's default delve
     -- handler uses `dlv` from PATH (missing on this machine) and races
     -- with dap-go, producing "Debug adapter didn't respond".
+    -- NOTE: only `delve` is a handler name mason-nvim-dap knows; a `go`
+    -- entry logs "unknown dap source name", so it is deliberately absent.
     handlers = {
-      go = function() end,
       delve = function() end,
     },
     ensure_installed = { 'delve', 'python', 'js' },
@@ -215,6 +216,30 @@ local function ensure_dap()
             runtimeArgs = { 'run', 'dev' },
             cwd = '${workspaceFolder}',
             console = 'integratedTerminal',
+          },
+          -- Vitest / Jest: debug the test file open in the current buffer.
+          -- These are the official VS Code recipes (js-debug attaches to
+          -- `program`; do NOT pass --inspect-brk yourself). Pick them from the
+          -- F5/<leader>dc configuration list.
+          {
+            type = 'pwa-node',
+            request = 'launch',
+            name = 'Vitest: current file',
+            program = '${workspaceFolder}/node_modules/vitest/vitest.mjs',
+            args = { 'run', '${file}' },
+            cwd = '${workspaceFolder}',
+            console = 'integratedTerminal',
+            skipFiles = { '<node_internals>/**', '**/node_modules/**' },
+          },
+          {
+            type = 'pwa-node',
+            request = 'launch',
+            name = 'Jest: current file',
+            program = '${workspaceFolder}/node_modules/jest/bin/jest.js',
+            args = { '${file}', '--runInBand' },
+            cwd = '${workspaceFolder}',
+            console = 'integratedTerminal',
+            skipFiles = { '<node_internals>/**', '**/node_modules/**' },
           },
         }
       end

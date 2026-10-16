@@ -2,15 +2,11 @@
 -- https://github.com/nvim-neo-tree/neo-tree.nvim
 
 -- plenary comes from SECTION 4 (telescope), nui from noice.lua; not duplicated here.
-local plugins = {
+-- Icons are provided by `mini.icons` (see init.lua SECTION 3), which mocks the
+-- nvim-web-devicons API neo-tree expects - so no separate devicons plugin here.
+vim.pack.add {
   { src = 'https://github.com/nvim-neo-tree/neo-tree.nvim', version = vim.version.range '*' },
 }
-
-if vim.g.have_nerd_font then
-  table.insert(plugins, 'https://github.com/nvim-tree/nvim-web-devicons') -- not strictly required, but recommended
-end
-
-vim.pack.add(plugins)
 
 -- Lazy 10ms setup until first \ (saves on startup, vim.pack still ensures plugin installed)
 local _neotree_setup = false

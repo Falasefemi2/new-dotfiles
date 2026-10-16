@@ -31,6 +31,16 @@ vim.api.nvim_create_autocmd('VimEnter', {
         return { 'python' }
       end
 
+      -- TypeScript/JavaScript REPL: prefer `tsx` (fast esbuild-backed TS REPL,
+      -- waits for no tsconfig), then `bun` (native TS runtime), then `ts-node`,
+      -- then plain `node` as the always-present floor. First hit on PATH wins.
+      local function ts_command()
+        if vim.fn.executable 'tsx' == 1 then return { 'tsx' } end
+        if vim.fn.executable 'bun' == 1 then return { 'bun', 'repl' } end
+        if vim.fn.executable 'ts-node' == 1 then return { 'ts-node' } end
+        return { 'node' }
+      end
+
       local shell_command
       if is_win then
         shell_command = { 'powershell.exe', '-NoLogo' }
@@ -54,8 +64,8 @@ vim.api.nvim_create_autocmd('VimEnter', {
               env = { PYTHON_BASIC_REPL = '1' },
             },
             lua = { command = { 'lua' } },
-            javascript = { command = { 'node' } },
-            typescript = { command = { 'ts-node' } },
+            javascript = { command = ts_command },
+            typescript = { command = ts_command },
             -- Example: custom REPL that loads the current file
             -- haskell = {
             --   command = function(meta)

@@ -173,6 +173,35 @@
 |--------|------|-------------|
 | `<leader>mp` | n | Toggle markdown preview in browser |
 
+## HTTP Client (`.http` / `.rest` files)
+
+> Dependency-free `.http` runner (IntelliJ/VS Code spec: `###` separators, `@var = value` file vars, `{{var}}` interpolation, `.env` lookup). Uses `curl`.
+
+| Keymap | Mode | Description |
+|--------|------|-------------|
+| `<leader>Hr` | n | Run the request under the cursor |
+| `<leader>Hl` | n | Re-run the last request |
+
+## File Marks (Grapple) — `<leader>m`
+
+> Per-git-repo pinned files with saved cursor position.
+
+| Keymap | Mode | Description |
+|--------|------|-------------|
+| `<leader>mt` | n | Toggle tag on current file |
+| `<leader>mT` | n | Open tags window |
+| `<leader>m]` | n | Cycle to next tag |
+| `<leader>m[` | n | Cycle to previous tag |
+
+## Always-on (no keymaps)
+
+| Feature | Description |
+|---------|-------------|
+| `nvim-treesitter-context` | Sticky header of the enclosing function/class/block |
+| `render-markdown.nvim` | Renders Markdown in-buffer (headings, tables, callouts, LaTeX) |
+| `tiny-inline-diagnostic.nvim` | Inline (end-of-line) diagnostics |
+
+
 ## Flash (Jump) + Surround
 
 | Keymap | Mode | Description |
@@ -196,6 +225,15 @@
 | `<leader>dr` | n | Open REPL |
 | `<leader>du` | n | Toggle DAP UI |
 | `<leader>de` | n, v | Evaluate expression (visual) |
+| `<leader>dt` | n | Debug: Go test (nearest) |
+| `<leader>dT` | n | Debug: Go last test |
+| `<leader>dc` | n | Debug: Continue |
+| `<leader>dx` | n | Debug: Terminate |
+| `<leader>ds` | n | Debug: Step over |
+| `<leader>di` | n | Debug: Step into |
+| `<leader>do` | n | Debug: Step out |
+
+> JS/TS sessions also offer **"Vitest: current file"** and **"Jest: current file"** in the F5 / `<leader>dc` configuration picker.
 
 ## Utility Windows
 
@@ -209,7 +247,8 @@
 | Keymap | Mode | Description |
 |--------|------|-------------|
 | `<leader>co` | n | Organize imports (TS/JS buffer) |
-| `<leader>cT` | n | Run `npm test` in split terminal |
+| `<leader>cT` | n | Run tests (package-manager aware: vitest/jest) |
+| `<leader>cR` | n | Run a package.json script (picker) |
 | `<leader>ce` | n | Show TS error (ts_ls buffers; diagnostic float in Effect projects) |
 | `<leader>cE` | n | Show all TS errors |
 | `<leader>ct` | n | Toggle TS error auto-display |
@@ -239,7 +278,7 @@
 | `<leader>eq` | n | Exit/close REPL |
 | `<leader>eC` | n | Clear REPL screen |
 
-REPLs configured: `sh` (zsh / `$SHELL`, PowerShell on Windows), `powershell`, `python` (project `.venv` aware, `PYTHON_BASIC_REPL=1` for 3.13+), `lua`, `javascript` (node), `typescript` (ts-node). Opens with `view.bottom(40)`. Sends go to nvim-dap REPL when debugging.
+REPLs configured: `sh` (zsh / `$SHELL`, PowerShell on Windows), `powershell`, `python` (project `.venv` aware, `PYTHON_BASIC_REPL=1` for 3.13+), `lua`, `javascript` + `typescript` (auto-detected: `tsx` → `bun repl` → `ts-node` → `node`). Opens with `view.bottom(40)`. Sends go to nvim-dap REPL when debugging.
 
 ## LaTeX (only in .tex/.bib files)
 
@@ -264,4 +303,4 @@ REPLs configured: `sh` (zsh / `$SHELL`, PowerShell on Windows), `powershell`, `p
 
 ---
 
-*Generated from your Neovim config — 95+ keymaps across all plugins.*
+*Generated from your Neovim config — 100+ keymaps across all plugins.*
