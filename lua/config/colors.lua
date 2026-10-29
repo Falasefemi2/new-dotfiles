@@ -1,7 +1,10 @@
 -- lua/config/colors.lua
 -- Self-contained theme manager for a vim.pack-based config.
 --
--- - Curated set of 22 vivid themes. All are *registered* with `vim.pack.add`
+-- - Curated set of 57 themes: 22 core dark schemes, dark variants of the
+--   same packs, a handful of extra schemes, and 13 light themes (marked with
+--   `background = 'light'`, applied via `vim.o.background` before loading).
+--   All are *registered* with `vim.pack.add`
 --   at startup (cheap: no setup runs), but only the active theme is
 --   configured + applied, so startup stays fast. Switching to a theme whose
 --   plugin is present but not yet sourced first runs `:packadd`.
@@ -21,9 +24,12 @@ local M = {}
 ---@field pack string Directory/name passed to `:packadd` (matches `vim.pack.add` spec `name`)
 ---@field colorscheme string Name passed to `:colorscheme`
 ---@field setup? fun(transparent: boolean) Theme setup with transparency support
+---@field background? 'dark'|'light' Variant to select before loading (default: 'dark')
 
 ---Ordered theme list. `tokyonight-night` is the default (most vivid,
 ---first-class treesitter/LSP/telescope/neo-tree/gitsigns/cmp support).
+---Order matters: it drives the `<leader>un`/`<leader>up` cycle and the
+---unfiltered picker order, so the extra sets are appended in sections below.
 ---@type (ConfigColorsTheme & { label: string })[]
 local THEMES = {
   {
@@ -122,7 +128,6 @@ local THEMES = {
     pack = 'gruvbox',
     colorscheme = 'gruvbox',
     setup = function(transparent)
-      vim.o.background = 'dark'
       require('gruvbox').setup { contrast = 'hard', transparent_mode = transparent }
     end,
   },
@@ -192,6 +197,282 @@ local THEMES = {
       require('modus-themes').setup { style = 'modus_vivendi', transparent = transparent }
     end,
   },
+
+  -- =========================================================================
+  -- Extra dark variants of the themes above (same pack: nothing to download)
+  -- =========================================================================
+  {
+    label = 'tokyonight-storm',
+    pack = 'tokyonight',
+    colorscheme = 'tokyonight-storm',
+    setup = function(transparent)
+      require('tokyonight').setup { style = 'storm', transparent = transparent, terminal_colors = true }
+    end,
+  },
+  {
+    label = 'tokyonight-moon',
+    pack = 'tokyonight',
+    colorscheme = 'tokyonight-moon',
+    setup = function(transparent)
+      require('tokyonight').setup { style = 'moon', transparent = transparent, terminal_colors = true }
+    end,
+  },
+  {
+    label = 'catppuccin-macchiato',
+    pack = 'catppuccin',
+    colorscheme = 'catppuccin-macchiato',
+    setup = function(transparent)
+      require('catppuccin').setup { flavour = 'macchiato', transparent_background = transparent, term_colors = true }
+    end,
+  },
+  {
+    label = 'catppuccin-frappe',
+    pack = 'catppuccin',
+    colorscheme = 'catppuccin-frappe',
+    setup = function(transparent)
+      require('catppuccin').setup { flavour = 'frappe', transparent_background = transparent, term_colors = true }
+    end,
+  },
+  {
+    label = 'kanagawa-wave',
+    pack = 'kanagawa',
+    colorscheme = 'kanagawa-wave',
+    setup = function(transparent) require('kanagawa').setup { theme = 'wave', transparent = transparent } end,
+  },
+  {
+    label = 'rose-pine-moon',
+    pack = 'rose-pine',
+    colorscheme = 'rose-pine-moon',
+    setup = function(transparent)
+      require('rose-pine').setup { variant = 'moon', dark_variant = 'moon', styles = { transparency = transparent } }
+    end,
+  },
+  {
+    label = 'nightfox-nordfox',
+    pack = 'nightfox',
+    colorscheme = 'nordfox',
+    setup = function(transparent) require('nightfox').setup { options = { transparent = transparent } } end,
+  },
+  {
+    label = 'nightfox-terafox',
+    pack = 'nightfox',
+    colorscheme = 'terafox',
+    setup = function(transparent) require('nightfox').setup { options = { transparent = transparent } } end,
+  },
+  {
+    label = 'nightfox-carbonfox',
+    pack = 'nightfox',
+    colorscheme = 'carbonfox',
+    setup = function(transparent) require('nightfox').setup { options = { transparent = transparent } } end,
+  },
+  {
+    label = 'everforest-soft',
+    pack = 'everforest',
+    colorscheme = 'everforest',
+    setup = function(transparent)
+      require('everforest').setup { background = 'soft', transparent_background_level = transparent and 2 or 0 }
+    end,
+  },
+  {
+    label = 'github-dark-dimmed',
+    pack = 'github-nvim-theme',
+    colorscheme = 'github_dark_dimmed',
+    setup = function(transparent) require('github-theme').setup { options = { transparent = transparent } } end,
+  },
+  {
+    label = 'onedark-vivid',
+    pack = 'onedarkpro',
+    colorscheme = 'onedark_vivid',
+    setup = function(transparent) require('onedarkpro').setup { options = { transparency = transparent } } end,
+  },
+
+  -- =========================================================================
+  -- Additional schemes (installed on first switch, one new pack each)
+  -- =========================================================================
+  {
+    label = 'solarized-osaka',
+    pack = 'solarized-osaka',
+    colorscheme = 'solarized-osaka',
+    setup = function(transparent)
+      require('solarized-osaka').setup { style = '', transparent = transparent, terminal_colors = true }
+    end,
+  },
+  {
+    label = 'nord',
+    pack = 'nord',
+    colorscheme = 'nord',
+    setup = function(transparent)
+      vim.g.nord_disable_background = transparent
+      vim.g.nord_italic = true
+      vim.g.nord_borders = true
+    end,
+  },
+  {
+    label = 'dracula',
+    pack = 'dracula',
+    colorscheme = 'dracula',
+    setup = function(transparent) require('dracula').setup { transparent_bg = transparent } end,
+  },
+  {
+    label = 'dracula-soft',
+    pack = 'dracula',
+    colorscheme = 'dracula-soft',
+    setup = function(transparent) require('dracula').setup { theme = 'dracula-soft', transparent_bg = transparent } end,
+  },
+  {
+    label = 'sonokai',
+    pack = 'sonokai',
+    colorscheme = 'sonokai',
+    setup = function(transparent)
+      vim.g.sonokai_style = 'default'
+      vim.g.sonokai_transparent_background = transparent and 1 or 0
+      vim.g.sonokai_enable_italic = 1
+    end,
+  },
+  {
+    label = 'sonokai-atlantis',
+    pack = 'sonokai',
+    colorscheme = 'sonokai',
+    setup = function(transparent)
+      vim.g.sonokai_style = 'atlantis'
+      vim.g.sonokai_transparent_background = transparent and 1 or 0
+      vim.g.sonokai_enable_italic = 1
+    end,
+  },
+  {
+    label = 'bamboo',
+    pack = 'bamboo',
+    colorscheme = 'bamboo',
+    setup = function(transparent)
+      require('bamboo').setup { style = 'vulgaris', transparent = transparent, term_colors = true }
+    end,
+  },
+  {
+    label = 'monokai-pro',
+    pack = 'monokai-pro',
+    colorscheme = 'monokai-pro',
+    setup = function(transparent)
+      require('monokai-pro').setup { filter = 'pro', transparent_background = transparent, terminal_colors = true }
+    end,
+  },
+  {
+    label = 'monokai-pro-ristretto',
+    pack = 'monokai-pro',
+    colorscheme = 'monokai-pro',
+    setup = function(transparent)
+      require('monokai-pro').setup { filter = 'ristretto', transparent_background = transparent, terminal_colors = true }
+    end,
+  },
+  { label = 'midnight', pack = 'midnight', colorscheme = 'midnight' },
+
+  -- =========================================================================
+  -- Light themes (set 'background' before loading so the variant is correct)
+  -- =========================================================================
+  {
+    label = 'tokyonight-day',
+    pack = 'tokyonight',
+    colorscheme = 'tokyonight-day',
+    background = 'light',
+    setup = function(transparent)
+      require('tokyonight').setup { style = 'day', transparent = transparent, terminal_colors = true }
+    end,
+  },
+  {
+    label = 'catppuccin-latte',
+    pack = 'catppuccin',
+    colorscheme = 'catppuccin-latte',
+    background = 'light',
+    setup = function(transparent)
+      require('catppuccin').setup { flavour = 'latte', transparent_background = transparent, term_colors = true }
+    end,
+  },
+  {
+    label = 'kanagawa-lotus',
+    pack = 'kanagawa',
+    colorscheme = 'kanagawa-lotus',
+    background = 'light',
+    setup = function(transparent) require('kanagawa').setup { theme = 'lotus', transparent = transparent } end,
+  },
+  {
+    label = 'rose-pine-dawn',
+    pack = 'rose-pine',
+    colorscheme = 'rose-pine-dawn',
+    background = 'light',
+    setup = function(transparent)
+      require('rose-pine').setup { variant = 'dawn', dark_variant = 'main', styles = { transparency = transparent } }
+    end,
+  },
+  {
+    label = 'nightfox-dayfox',
+    pack = 'nightfox',
+    colorscheme = 'dayfox',
+    background = 'light',
+    setup = function(transparent) require('nightfox').setup { options = { transparent = transparent } } end,
+  },
+  {
+    label = 'nightfox-dawnfox',
+    pack = 'nightfox',
+    colorscheme = 'dawnfox',
+    background = 'light',
+    setup = function(transparent) require('nightfox').setup { options = { transparent = transparent } } end,
+  },
+  {
+    label = 'everforest-light',
+    pack = 'everforest',
+    colorscheme = 'everforest',
+    background = 'light',
+    setup = function(transparent)
+      require('everforest').setup { background = 'hard', transparent_background_level = transparent and 2 or 0 }
+    end,
+  },
+  {
+    label = 'github-light',
+    pack = 'github-nvim-theme',
+    colorscheme = 'github_light',
+    background = 'light',
+    setup = function(transparent) require('github-theme').setup { options = { transparent = transparent } } end,
+  },
+  {
+    label = 'gruvbox-light',
+    pack = 'gruvbox',
+    colorscheme = 'gruvbox',
+    background = 'light',
+    setup = function(transparent) require('gruvbox').setup { contrast = 'hard', transparent_mode = transparent } end,
+  },
+  {
+    label = 'onelight',
+    pack = 'onedarkpro',
+    colorscheme = 'onelight',
+    background = 'light',
+    setup = function(transparent) require('onedarkpro').setup { options = { transparency = transparent } } end,
+  },
+  {
+    label = 'modus-operandi',
+    pack = 'modus-themes',
+    colorscheme = 'modus_operandi',
+    background = 'light',
+    setup = function(transparent)
+      require('modus-themes').setup { style = 'modus_operandi', transparent = transparent }
+    end,
+  },
+  {
+    label = 'bamboo-light',
+    pack = 'bamboo',
+    colorscheme = 'bamboo',
+    background = 'light',
+    setup = function(transparent)
+      require('bamboo').setup { style = 'light', transparent = transparent, term_colors = true }
+    end,
+  },
+  {
+    label = 'solarized-osaka-light',
+    pack = 'solarized-osaka',
+    colorscheme = 'solarized-osaka-light',
+    background = 'light',
+    setup = function(transparent)
+      require('solarized-osaka').setup { style = '', light_style = 'light', transparent = transparent, terminal_colors = true }
+    end,
+  },
 }
 
 ---@param repo string
@@ -223,6 +504,13 @@ pcall(vim.pack.add, {
   { src = gh 'rmehri01/onenord.nvim', name = 'onenord' },
   { src = gh 'zenbones-theme/zenbones.nvim', name = 'zenbones' },
   { src = gh 'miikanissi/modus-themes.nvim', name = 'modus-themes' },
+  { src = gh 'craftzdog/solarized-osaka.nvim', name = 'solarized-osaka' },
+  { src = gh 'shaunsingh/nord.nvim', name = 'nord' },
+  { src = gh 'Mofiqul/dracula.nvim', name = 'dracula' },
+  { src = gh 'sainnhe/sonokai', name = 'sonokai' },
+  { src = gh 'ribru17/bamboo.nvim', name = 'bamboo' },
+  { src = gh 'loctvl842/monokai-pro.nvim', name = 'monokai-pro' },
+  { src = gh 'dasupradyumna/midnight.nvim', name = 'midnight' },
 })
 
 local STATE_FILE = vim.fn.stdpath 'data' .. '/colorscheme.json'
@@ -339,6 +627,10 @@ function M.apply(label, opts)
   -- Load the theme plugin on demand when switching to one that has not
   -- been sourced yet (only the active theme loads at startup).
   pcall(vim.cmd.packadd, theme.pack)
+  -- Pick the right variant before setup runs: most themes (gruvbox,
+  -- everforest, bamboo, nightfox, panvimdoc-style byte themes) choose their
+  -- light palette from 'background' when ':colorscheme' is executed.
+  vim.o.background = theme.background or 'dark'
   if theme.pack == 'gruvbox-material' then
     vim.g.gruvbox_material_background = 'hard'
     vim.g.gruvbox_material_transparent_background = state.transparent and 1 or 0
@@ -442,7 +734,15 @@ function M.pick()
   local confirmed = false
   local picker = pickers.new({}, {
     prompt_title = 'Colorscheme (live preview, <CR> saves, <Esc> reverts)',
-    finder = finders.new_table { results = theme_names() },
+    finder = finders.new_table {
+      results = theme_names(),
+      -- ☾ = dark, ☀ = light, so the list is scannable at a glance.
+      entry_maker = function(label)
+        local theme = find_theme(label)
+        local icon = theme and theme.background == 'light' and '☀' or '☾'
+        return { value = label, display = ('%s %s'):format(icon, label), ordinal = label }
+      end,
+    },
     sorter = conf.values.generic_sorter {},
     previewer = false,
     attach_mappings = function(prompt_bufnr, map)

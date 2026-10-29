@@ -245,7 +245,7 @@ do
 
   -- [[ Colorscheme + theme switcher ]]
   -- Owned by lua/config/colors.lua: vivid tokyonight-night default,
-  -- 22-theme curated set, <leader>u picker/cycle/random/transparent/accent
+  -- 57-theme curated set (dark + light), <leader>u picker/cycle/random/transparent/accent
   -- keymaps, persistence, and ColorScheme refresh. Applied synchronously
   -- here so there is no flash of the default theme on startup.
   require 'config.colors'

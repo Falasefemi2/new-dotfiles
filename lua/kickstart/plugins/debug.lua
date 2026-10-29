@@ -88,6 +88,50 @@ local function ensure_dap()
       port = '${port}',
     },
   }
+  -- Delve compiles with `go build` *in its own process cwd*, which nvim-dap
+  -- inherits from the editor (e.g. ~/AppData/Local/nvim) -- not from the Go
+  -- module. That makes every launch fail with "go.mod file not found in
+  -- current directory or any parent directory", even when `program` points at
+  -- a perfectly valid package. Delve's `dlvCwd` chdirs the debugger before it
+  -- builds, so derive the module root from the buffer and hand it to every Go
+  -- launch config. Program paths are made absolute first, because dap-go's
+  -- test configs and ${file}-style values are relative to the editor cwd.
+  local function go_module_root()
+    local root = vim.fs.root(0, { 'go.mod', 'go.work' })
+    if root then return root end
+    local cwd = vim.fn.getcwd()
+    return vim.fs.root(cwd, { 'go.mod', 'go.work' }) or cwd
+  end
+  local function absolute(path)
+    -- dap-go prefixes test packages with "./", which on Windows can already
+    -- be absolute (e.g. "./C:\proj\pkg" when the editor sits on another drive).
+    while path:match '^%.[/\\]' do path = path:sub(3) end
+    if not (path:match '^%a:[/\\]' or path:match '^[/\\]') then
+      path = vim.fn.getcwd() .. '/' .. path
+    end
+    local p = vim.fs.normalize(path)
+    return #p > 3 and (p:gsub('[/\\]+$', '')) or p
+  end
+  local dap_run = dap.run
+  dap.run = function(config, opts)
+    if type(config) == 'table' and config.type == 'go' and (config.request or 'launch') == 'launch' then
+      -- Shallow copy: never mutate the shared entry in dap.configurations.
+      local run = vim.tbl_extend('force', {}, config)
+      local program = run.program
+      if type(program) == 'string' and not program:match '%$%{' then
+        program = absolute(program)
+        run.program = program
+      end
+      run.dlvCwd = run.dlvCwd or go_module_root()
+      if not run.cwd and run.mode ~= 'test' then
+        -- Run the target from its package dir, like `go run .`.
+        run.cwd = (type(program) == 'string' and vim.fn.isdirectory(program) == 1) and program or run.dlvCwd
+      end
+      return dap_run(run, opts)
+    end
+    return dap_run(config, opts)
+  end
+
   -- Projects using cmd/ layout have no .go files in the root, so building
   -- the root fails with "no Go files in ...". Keep dap-go's ${file} /
   -- ${fileDirname} defaults for "debug this file", and append explicit
