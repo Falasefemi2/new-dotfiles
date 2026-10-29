@@ -1149,5 +1149,16 @@ do
   require 'custom.plugins'
 end
 
+-- ============================================================
+-- SECTION 10: FLOATING TERMINALS
+-- Multi-instance floats, no plugin dependency. Replaces toggleterm.
+-- See lua/custom/floatterm.lua for opts and the public API.
+-- ============================================================
+require('custom.floatterm').setup {
+  width = 0.62,
+  height = 0.55,
+  border = 'rounded',
+}
+
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et

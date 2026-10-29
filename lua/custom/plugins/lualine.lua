@@ -26,11 +26,10 @@ vim.api.nvim_create_autocmd('VimEnter', {
           component_separators = { left = '│', right = '│' },
           section_separators = { left = '', right = '' },
           disabled_filetypes = {
-            statusline = { 'neo-tree', 'toggleterm' },
+            statusline = { 'neo-tree' },
             winbar = {},
           },
           globalstatus = true,
-          always_show_tabline = true,
           refresh = {
             statusline = 1000,
             tabline = 1000,
@@ -66,7 +65,7 @@ vim.api.nvim_create_autocmd('VimEnter', {
           lualine_y = {},
           lualine_z = {},
         },
-        extensions = { 'neo-tree', 'toggleterm' },
+        extensions = { 'neo-tree' },
       }
     end)
   end,

@@ -126,18 +126,27 @@
 | `<leader>xL` | n | Toggle location list |
 | `<leader>xQ` | n | Toggle quickfix list |
 
-## Terminal (Toggleterm)
+## Terminal (floatterm, no plugin)
 
 | Keymap | Mode | Description |
 |--------|------|-------------|
-| `<C-\\>` | n, t | Toggle terminal |
-| `<leader>tt` | n | Toggle terminal |
-| `<leader>tn` | n | New terminal |
-| `<leader>ts` | n | Select terminal |
-| `<leader>t]` | n | Next terminal |
-| `<leader>t[` | n | Previous terminal |
-| `<leader>tq` | n | Close terminal |
-| `<leader>t1`–`<leader>t9` | n | Toggle terminal 1–9 |
+| `<C-\\>` | n, t | Toggle active float |
+| `<leader>tt` | n, t | Toggle active float |
+| `<leader>tn` | n | New float (always a new instance) |
+| `<leader>ta` | n | Toggle all floats |
+| `<leader>ts` | n | Pick a float (`vim.ui.select`) |
+| `<leader>t]` | n | Focus next visible float |
+| `<leader>t[` | n | Focus previous visible float |
+| `<leader>tq` | n, t | Close focused float (kills its job) |
+| `<leader>t1`–`<leader>t9` | n | Toggle float 1–9 (creates if missing) |
+| `<A-h/j/k/l>` | n, t | Move focused float |
+| `<A-H/J/K/L>` | n, t | Resize focused float |
+| `<LeftMouse>` on border/title | n, t | Drag to move |
+| `<LeftMouse>` on bottom-right corner | n, t | Drag to resize |
+| `<LeftMouse>` inside a float | n, t | Raise + focus (normal mode also enters terminal) |
+
+Commands: `:FloatTerm [cmd]`, `:FloatTermToggle [id]`, `:FloatTermToggleAll`,
+`:FloatTermPick`, `:FloatTermClose [id]`, `:FloatTermNext`.
 
 ## Go (only in .go files)
 

@@ -21,17 +21,5 @@ vim.keymap.set('n', '<C-Right>', '<cmd>vertical resize +2<CR>', { desc = 'Increa
 vim.keymap.set('n', '[b', '<cmd>bprevious<CR>', { desc = 'Previous Buffer' })
 vim.keymap.set('n', ']b', '<cmd>bnext<CR>', { desc = 'Next Buffer' })
 vim.keymap.set('n', '<leader>bd', function()
-  local ok, bufremove = pcall(require, 'mini.bufremove')
-  local bd = ok and bufremove.delete or function(buf, force) vim.api.nvim_buf_delete(buf, { force = force }) end
-  if vim.bo.modified then
-    local choice = vim.fn.confirm(('Save changes to %q?'):format(vim.fn.bufname()), '&Yes\n&No\n&Cancel')
-    if choice == 1 then
-      vim.cmd.write()
-      bd(0, false)
-    elseif choice == 2 then
-      bd(0, true)
-    end
-  else
-    bd(0, false)
-  end
+  require('config.buffers').close(0)
 end, { desc = '[B]uffer [D]elete' })

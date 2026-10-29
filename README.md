@@ -18,7 +18,7 @@ lua/custom/plugins/      # FEMMIE layer (explicit manifest in init.lua)
   effect-tsgo.lua        # @effect/tsgo binary LSP (tsgo fork)
   go.lua                 # gopls imports + test toggles
   lualine.lua            # statusline (single source of truth)
-  noice.lua, toggleterm, trouble, ufo, dashboard...
+  noice.lua, trouble, ufo, dashboard...
 .luarc.json              # LuaLS config for Neovim
 .stylua.toml             # 160 cols, 2 spaces
 nvim-pack-lock.json      # Tracked for reproducible installs
@@ -36,7 +36,7 @@ nvim-pack-lock.json      # Tracked for reproducible installs
 | Git | `gitsigns`, `neogit`, `diffview` |
 | Lang | `gopls`, `pyright/ruff`, `ts_ls` + `effect_tsgo`, `tailwindcss`, `lua_ls` |
 | Debug | `nvim-dap`, `dap-ui`, `mason-nvim-dap`, `nvim-dap-go` |
-| Custom | `persistence`, `toggleterm`, `trouble`, `nvim-spectre`, `ufo`, `wakatime` |
+| Custom | `persistence`, `trouble`, `nvim-spectre`, `ufo`, `wakatime`; dependency-free floats in `lua/custom/floatterm.lua` |
 
 Run `:lua vim.pack.update(nil, {offline=true})` to inspect, `:lua vim.pack.update()` to update.
 

@@ -6,6 +6,7 @@
 -- Explicit plugin manifest (senior OSS: fail-loud, deterministic load order)
 -- Adding a new file here requires adding one line - no magic, no silent swallow.
 local plugins = {
+  'bufferline',
   'color-terminal',
   'colorizer',
   'dashboard',
@@ -29,7 +30,6 @@ local plugins = {
   'smear-cursor',
   'statuscolumn',
   'tiny-inline-diagnostic',
-  'toggleterm',
   'treesitter-context',
   'trouble',
   'ufo',
