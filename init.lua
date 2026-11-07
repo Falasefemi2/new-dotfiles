@@ -1,4 +1,10 @@
 if vim.fn.executable 'gcc' == 1 then vim.env.CC = 'gcc' end
+
+-- Mason installs CLI tools (goimports, gofumpt, golines, stylua, ...) into its
+-- own bin directory, which is not on PATH by default. Append it so conform and
+-- other tools can find them without shadowing tools already on PATH.
+local mason_bin = vim.fs.joinpath(vim.fn.stdpath 'data', 'mason', 'bin')
+if not vim.env.PATH:lower():find(mason_bin:lower(), 1, true) then vim.env.PATH = vim.env.PATH .. (vim.fn.has 'win32' == 1 and ';' or ':') .. mason_bin end
 --[[
 
 =====================================================================
@@ -220,7 +226,7 @@ do
       { '<leader>S', group = '[S]ession' },
       { '<leader>t', group = '[T]erminal / [T]oggle' },
       { '<leader>d', group = '[D]ebug' },
-      { '<leader>h', group = 'Git [H]unk', mode = { 'n', 'v' } }, -- Enable gitsigns recommended keymaps first
+      { '<leader>h', group = '[H]arpoon / Git [H]unk', mode = { 'n', 'v' } }, -- Harpoon + gitsigns recommended keymaps
       { 'gr', group = 'LSP Actions', mode = { 'n' } },
       { '<leader>g', group = '[G]o / [G]it' },
       { '<leader>x', group = 'Trouble' },
@@ -563,9 +569,8 @@ do
 
       -- Inlay hints: grey virtual text showing types like `err: error` on `:=`
       -- gopls `hints.assignVariableTypes` powers `ctx, err := ...` -> `err: error`
-      -- OFF by default (opt-in). Toggle with <leader>th.
+      -- OFF by default; toggle per buffer with <leader>th.
       if client and client:supports_method('textDocument/inlayHint', event.buf) then
-        -- Ensure off by default; user opts in per-buffer via toggle.
         vim.lsp.inlay_hint.enable(false, { bufnr = event.buf })
         map(
           '<leader>th',

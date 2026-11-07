@@ -202,6 +202,25 @@ Commands: `:FloatTerm [cmd]`, `:FloatTermToggle [id]`, `:FloatTermToggleAll`,
 | `<leader>m]` | n | Cycle to next tag |
 | `<leader>m[` | n | Cycle to previous tag |
 
+## Harpoon (File Navigation) — `<leader>h`
+
+> Pin frequently used files and jump to them directly. Lists are scoped to the git repository root (or the working directory outside a repo).
+
+| Keymap | Mode | Description |
+|--------|------|-------------|
+| `<leader>ha` | n | Add current file to Harpoon |
+| `<leader>hh` | n | Toggle Harpoon quick menu |
+| `<leader>1` | n | Jump to Harpoon file 1 |
+| `<leader>2` | n | Jump to Harpoon file 2 |
+| `<leader>3` | n | Jump to Harpoon file 3 |
+| `<leader>4` | n | Jump to Harpoon file 4 |
+| `<leader>hn` | n | Jump to next Harpoon file (wraps) |
+| `<leader>hP` | n | Jump to previous Harpoon file (wraps; `<leader>hp` is gitsigns preview hunk) |
+| `<leader>hx` | n | Remove current file from Harpoon |
+| `<leader>hT` | n | Fuzzy-find Harpoon list in Telescope |
+
+Menu-local: `<CR>` select entry, `<C-v>` / `<C-x>` / `<C-t>` open in vertical split / horizontal split / new tab, `q` / `<Esc>` close, `dd` delete entry (saved when the menu closes).
+
 ## Always-on (no keymaps)
 
 | Feature | Description |

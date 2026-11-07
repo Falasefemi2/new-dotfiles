@@ -15,6 +15,7 @@ local plugins = {
   'flash',
   'go',
   'grapple',
+  'harpoon',
   'http',
   'iron',
   'lualine',
