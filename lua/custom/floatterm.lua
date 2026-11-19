@@ -274,8 +274,6 @@ local function open_win(t, focus)
   t.visible = true
   api.nvim_set_option_value('winhighlight', winhighlight(false), { win = win })
   api.nvim_set_option_value('winblend', state.opts.winblend, { win = win })
-  -- Floating terminals never show the breadcrumb winbar.
-  api.nvim_set_option_value('winbar', '', { win = win })
   if focus then
     api.nvim_set_current_win(win)
     raise(t)

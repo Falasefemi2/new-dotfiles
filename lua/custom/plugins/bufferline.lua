@@ -1,15 +1,26 @@
 -- lua/custom/plugins/bufferline.lua
--- VSCode-style buffer tabs. bufferline.nvim owns the tabline; lualine keeps the
--- statusline. Only listed real files are shown, and every close path goes
--- through config.buffers (mini.bufremove) so splits survive.
+-- NvChad "tabufline"-style buffer tabs. bufferline.nvim owns the tabline;
+-- lualine keeps the statusline. Every buffer is one padded cell of the same
+-- width with a devicon, its filename and a close/modified glyph.
+--
+-- Colours are never hardcoded: `highlights()` reads the active colorscheme
+-- through nvim_get_hl and bufferline's own ColorScheme autocommand calls that
+-- function again, so switching themes with the <leader>uc picker recolours
+-- the bar without a restart.
 vim.pack.add { 'https://github.com/akinsho/bufferline.nvim' }
 
 local api = vim.api
 
--- Single switch for the optional breadcrumb winbar.
-local opts = {
-  breadcrumbs = true,
-}
+-- Width of one cell in columns (icon + filename + modified/close glyph).
+local TAB_SIZE = 24
+-- Filename column: keeps names left-aligned and pushes the close/modified glyph
+-- to the right edge of the cell. Bufferline truncates to ~20 at TAB_SIZE 24, so
+-- 18 always fits.
+local NAME_WIDTH = TAB_SIZE - 6
+-- Fill: Normal bg scaled this far towards black. Multiplying RGB by a factor
+-- below 1 always lowers luminance, which is what "one shade darker" means for
+-- both dark and light themes.
+local FILL_SHADE = 0.9
 
 local loaded = false
 local ensure_setup
@@ -34,97 +45,87 @@ local function real_file_count()
   return count
 end
 
----@param name string
----@param attribute 'fg'|'bg'|'sp'
-local function from(name, attribute) return { highlight = name, attribute = attribute } end
-
----Highlight values are resolved by bufferline from the live colorscheme, and
----re-resolved on ColorScheme, so switching themes never leaves stale colors.
-local function highlights()
-  local fill_bg = from('TabLineFill', 'bg')
-  local normal_bg = from('Normal', 'bg')
-  local normal_fg = from('Normal', 'fg')
-  local comment_fg = from('Comment', 'fg')
-  local accent = from('Function', 'fg')
-  local sep_fg = from('WinSeparator', 'fg')
-  local error_fg = from('DiagnosticError', 'fg')
-  local warn_fg = from('DiagnosticWarn', 'fg')
-  local directory_fg = from('Directory', 'fg')
-
-  local function tab(fg, bg, selected)
-    local value = { fg = fg, bg = bg }
-    if selected then
-      value.bold = true
-      value.underline = true
-      value.sp = accent
-    end
-    return value
-  end
-
-  return {
-    fill = { fg = comment_fg, bg = fill_bg },
-    background = { fg = comment_fg, bg = fill_bg },
-    buffer = tab(comment_fg, fill_bg, false),
-    buffer_visible = tab(normal_fg, fill_bg, false),
-    buffer_selected = tab(normal_fg, normal_bg, true),
-    close_button = { fg = comment_fg, bg = fill_bg },
-    close_button_visible = { fg = normal_fg, bg = fill_bg },
-    close_button_selected = tab(normal_fg, normal_bg, true),
-    modified = { fg = normal_fg, bg = fill_bg },
-    modified_visible = { fg = normal_fg, bg = fill_bg },
-    modified_selected = tab(normal_fg, normal_bg, true),
-    separator = { fg = sep_fg, bg = fill_bg },
-    separator_visible = { fg = sep_fg, bg = fill_bg },
-    separator_selected = tab(sep_fg, normal_bg, true),
-    tab_separator = { fg = sep_fg, bg = fill_bg },
-    tab_separator_selected = tab(sep_fg, normal_bg, true),
-    indicator_selected = { fg = accent, bg = normal_bg },
-    indicator_visible = { fg = normal_fg, bg = fill_bg },
-    offset_separator = { fg = sep_fg, bg = fill_bg },
-    trunc_marker = { fg = comment_fg, bg = fill_bg },
-    diagnostic = { fg = comment_fg, bg = fill_bg },
-    diagnostic_visible = { fg = comment_fg, bg = fill_bg },
-    diagnostic_selected = { fg = normal_fg, bg = normal_bg },
-    error = { fg = error_fg, bg = fill_bg },
-    error_visible = { fg = error_fg, bg = fill_bg },
-    error_selected = tab(error_fg, normal_bg, true),
-    error_diagnostic = { fg = error_fg, bg = fill_bg },
-    error_diagnostic_visible = { fg = error_fg, bg = fill_bg },
-    error_diagnostic_selected = { fg = error_fg, bg = normal_bg },
-    warning = { fg = warn_fg, bg = fill_bg },
-    warning_visible = { fg = warn_fg, bg = fill_bg },
-    warning_selected = tab(warn_fg, normal_bg, true),
-    warning_diagnostic = { fg = warn_fg, bg = fill_bg },
-    warning_diagnostic_visible = { fg = warn_fg, bg = fill_bg },
-    warning_diagnostic_selected = { fg = warn_fg, bg = normal_bg },
-    -- Hints and info are deliberately neutral: only errors/warnings get color.
-    hint = { fg = comment_fg, bg = fill_bg },
-    hint_visible = { fg = normal_fg, bg = fill_bg },
-    hint_selected = tab(normal_fg, normal_bg, true),
-    hint_diagnostic = { fg = comment_fg, bg = fill_bg },
-    hint_diagnostic_visible = { fg = comment_fg, bg = fill_bg },
-    hint_diagnostic_selected = { fg = normal_fg, bg = normal_bg },
-    info = { fg = comment_fg, bg = fill_bg },
-    info_visible = { fg = normal_fg, bg = fill_bg },
-    info_selected = tab(normal_fg, normal_bg, true),
-    info_diagnostic = { fg = comment_fg, bg = fill_bg },
-    info_diagnostic_visible = { fg = comment_fg, bg = fill_bg },
-    info_diagnostic_selected = { fg = normal_fg, bg = normal_bg },
-    duplicate = { fg = directory_fg, bg = fill_bg, italic = true },
-    duplicate_visible = { fg = directory_fg, bg = fill_bg, italic = true },
-    duplicate_selected = { fg = directory_fg, bg = normal_bg, italic = true, underline = true, sp = accent },
-  }
+---Pad the filename to a fixed column so every cell is the same width and the
+---close/modified glyph lines up at its right edge (bufferline itself centres
+---whatever space is left over).
+---@param buf { name: string }
+---@return string
+local function name_formatter(buf)
+  local width = vim.fn.strwidth(buf.name)
+  if width >= NAME_WIDTH then return buf.name end
+  return buf.name .. string.rep(' ', NAME_WIDTH - width)
 end
 
----Only errors/warnings produce a tab indicator; hints/info return an empty string.
-local function diagnostics_indicator(_, _, diagnostics)
-  local errors = diagnostics.error or 0
-  local warnings = diagnostics.warning or 0
-  if errors == 0 and warnings == 0 then return '' end
-  local parts = {}
-  if errors > 0 then parts[#parts + 1] = ' ✖' .. errors end
-  if warnings > 0 then parts[#parts + 1] = ' ⚠' .. warnings end
-  return table.concat(parts)
+-- ============================================================
+-- Colours
+-- ============================================================
+
+---Read one attribute from a live highlight group.
+---@param name string
+---@param attribute 'fg'|'bg'
+---@return integer|nil
+local function attr(name, attribute)
+  local ok, value = pcall(api.nvim_get_hl, 0, { name = name, link = false })
+  if not ok then return nil end
+  return value[attribute]
+end
+
+---Scale an RGB colour towards black. nvim_get_hl yields 0xRRGGBB integers, so
+---no hex strings are involved anywhere.
+---@param color integer|nil
+---@return integer|nil
+local function darken(color)
+  if type(color) ~= 'number' then return nil end
+  local function channel(shift)
+    local value = math.floor(bit.band(bit.rshift(color, shift), 0xff) * FILL_SHADE + 0.5)
+    return math.min(255, math.max(0, value))
+  end
+  return bit.bor(bit.lshift(channel(16), 16), bit.lshift(channel(8), 8), channel(0))
+end
+
+---Derived from the colorscheme each time bufferline (re)applies highlights.
+local function highlights()
+  local normal_bg = attr('Normal', 'bg')
+  local normal_fg = attr('Normal', 'fg') or attr('NormalFloat', 'fg')
+  local dim_fg = attr('Comment', 'fg') or attr('NonText', 'fg') or normal_fg
+  -- Transparency (<leader>ut) clears Normal's bg; there is nothing to darken
+  -- then, so the bar and the active tab stay transparent with the editor.
+  local fill_bg = darken(normal_bg)
+  -- A nil value means "leave the group alone", so under transparency (no bg)
+  -- these background-only groups are explicitly cleared with 'NONE' instead of
+  -- keeping a stale colour from a previous theme.
+  local cell_bg = normal_bg or 'NONE'
+  local bar_bg = fill_bg or 'NONE'
+
+  return {
+    fill = { fg = dim_fg, bg = fill_bg },
+    background = { fg = dim_fg, bg = fill_bg },
+    buffer = { fg = dim_fg, bg = fill_bg },
+    buffer_visible = { fg = dim_fg, bg = fill_bg },
+    buffer_selected = { fg = normal_fg, bg = normal_bg, bold = true, italic = false },
+    close_button = { fg = dim_fg, bg = fill_bg },
+    close_button_visible = { fg = dim_fg, bg = fill_bg },
+    close_button_selected = { fg = normal_fg, bg = normal_bg, italic = false },
+    modified = { fg = dim_fg, bg = fill_bg },
+    modified_visible = { fg = dim_fg, bg = fill_bg },
+    modified_selected = { fg = normal_fg, bg = normal_bg, bold = true, italic = false },
+    -- `indicator.style = 'none'` still emits one padding cell; colour it like
+    -- the cell behind it so no stray block shows up.
+    indicator_selected = { fg = cell_bg, bg = cell_bg },
+    indicator_visible = { fg = bar_bg, bg = bar_bg },
+    -- No separators are drawn (separator_style = { '', '' }); these groups
+    -- exist anyway, so blend them into the tab they belong to.
+    separator = { fg = bar_bg, bg = bar_bg },
+    separator_visible = { fg = bar_bg, bg = bar_bg },
+    separator_selected = { fg = cell_bg, bg = cell_bg },
+    tab_separator = { fg = bar_bg, bg = bar_bg },
+    tab_separator_selected = { fg = cell_bg, bg = cell_bg },
+    offset_separator = { fg = bar_bg, bg = bar_bg },
+    trunc_marker = { fg = dim_fg, bg = fill_bg },
+    duplicate = { fg = dim_fg, bg = fill_bg },
+    duplicate_visible = { fg = dim_fg, bg = fill_bg },
+    duplicate_selected = { fg = normal_fg, bg = normal_bg, bold = true, italic = false },
+  }
 end
 
 ---Bufferline click handlers can run during redraw (fast event); defer the
@@ -208,41 +209,53 @@ ensure_setup = function()
   require('bufferline').setup {
     options = {
       mode = 'buffers',
+      numbers = 'none',
       -- Visibility is controlled below so the count is "real files", not all
       -- listed buffers. auto_toggle stays off to keep bufferline from fighting it.
       always_show_bufferline = false,
       auto_toggle_bufferline = false,
       custom_filter = is_real_file,
-      separator_style = 'thin',
-      indicator = { style = 'underline' },
+
+      -- Tabufline look: equal-width padded cells, no separators, no
+      -- underline/indicator, no diagnostics, no duplicate paths.
+      themable = false, -- derived colours always win over a theme's defaults
+      separator_style = { '', '' },
+      indicator = { style = 'none' },
+      enforce_regular_tabs = true,
+      tab_size = TAB_SIZE,
+      name_formatter = name_formatter,
+
       show_buffer_icons = true,
+      color_icons = true,
       show_buffer_close_icons = true,
+      buffer_close_icon = '×',
+      close_icon = '×', -- only used by the tab-page button, which is off
+      modified_icon = '●',
       show_close_icon = false,
       show_tab_indicators = true,
-      color_icons = true,
-      buffer_close_icon = '✕',
-      modified_icon = '●',
-      close_icon = '✕',
+      show_duplicate_prefix = false,
+      duplicates_across_groups = false,
+      truncate_names = true,
       left_trunc_marker = '<',
       right_trunc_marker = '>',
-      max_name_length = 28,
-      show_duplicate_prefix = true,
-      duplicates_across_groups = true,
+
       close_command = close_buffer,
       middle_mouse_command = close_buffer,
       right_mouse_command = false,
       left_mouse_command = 'buffer %d',
-      diagnostics = 'nvim_lsp',
-      diagnostics_indicator = diagnostics_indicator,
+
+      diagnostics = false,
+
       offsets = {
-        { filetype = 'neo-tree', text = 'Explorer', highlight = 'Directory', separator = true },
+        -- neo-tree is a right sidebar (see kickstart.plugins.neo-tree). An
+        -- empty text keeps the offset blank while reserving its full width.
+        { filetype = 'neo-tree', text = '', highlight = 'BufferLineFill' },
       },
     },
     highlights = highlights,
   }
 
   refresh_visibility()
-  if opts.breadcrumbs then require('config.breadcrumbs').enable() end
 end
 
 local lazy_group = api.nvim_create_augroup('BufferlineLazy', { clear = true })
@@ -268,4 +281,4 @@ refresh_visibility()
 
 set_keymaps()
 
-return { opts = opts, is_real_file = is_real_file }
+return { is_real_file = is_real_file }

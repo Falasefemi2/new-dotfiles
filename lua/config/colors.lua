@@ -1,8 +1,8 @@
 -- lua/config/colors.lua
 -- Self-contained theme manager for a vim.pack-based config.
 --
--- - Curated set of 57 themes: 22 core dark schemes, dark variants of the
---   same packs, a handful of extra schemes, and 13 light themes (marked with
+-- - Curated set of themes: core dark schemes, dark variants of the
+--   same packs, a handful of extra schemes, and light themes (marked with
 --   `background = 'light'`, applied via `vim.o.background` before loading).
 --   All are *registered* with `vim.pack.add`
 --   at startup (cheap: no setup runs), but only the active theme is
@@ -24,14 +24,39 @@ local M = {}
 ---@field pack string Directory/name passed to `:packadd` (matches `vim.pack.add` spec `name`)
 ---@field colorscheme string Name passed to `:colorscheme`
 ---@field setup? fun(transparent: boolean) Theme setup with transparency support
+---@field load? fun() Apply hook for schemes whose `:colorscheme <name>` would
+---resolve to another installed plugin's colors file with the same name
 ---@field background? 'dark'|'light' Variant to select before loading (default: 'dark')
 
----Ordered theme list. `tokyonight-night` is the default (most vivid,
----first-class treesitter/LSP/telescope/neo-tree/gitsigns/cmp support).
+---Ordered theme list. `onedark` (navarasu/onedark.nvim, darker style with a
+---custom bg0) is the default.
 ---Order matters: it drives the `<leader>un`/`<leader>up` cycle and the
 ---unfiltered picker order, so the extra sets are appended in sections below.
 ---@type (ConfigColorsTheme & { label: string })[]
 local THEMES = {
+  {
+    label = 'onedark',
+    pack = 'onedark',
+    colorscheme = 'onedark',
+    setup = function(transparent)
+      require('onedark').setup {
+        style = 'darker',
+        transparent = transparent,
+        term_colors = true,
+        colors = { bg0 = '#1e222a' },
+      }
+    end,
+    -- onedarkpro also ships `colors/onedark.lua`, and it sits earlier on the
+    -- runtimepath, so `:colorscheme onedark` would load the wrong theme. Call
+    -- the plugin API directly (what its own colors file does) after dropping
+    -- its cached modules so the colour table is rebuilt from the setup above.
+    load = function()
+      for name in pairs(package.loaded) do
+        if name == 'onedark' or name:match '^onedark%.' then package.loaded[name] = nil end
+      end
+      require('onedark').colorscheme()
+    end,
+  },
   {
     label = 'tokyonight-night',
     pack = 'tokyonight',
@@ -482,6 +507,7 @@ local function gh(repo) return 'https://github.com/' .. repo end
 -- Register every theme plugin (no setup runs here: only the active theme
 -- is loaded at startup, the rest on first switch).
 pcall(vim.pack.add, {
+  { src = gh 'navarasu/onedark.nvim', name = 'onedark' },
   { src = gh 'folke/tokyonight.nvim', name = 'tokyonight' },
   { src = gh 'catppuccin/nvim', name = 'catppuccin' },
   { src = gh 'rebelot/kanagawa.nvim', name = 'kanagawa' },
@@ -514,7 +540,7 @@ pcall(vim.pack.add, {
 })
 
 local STATE_FILE = vim.fn.stdpath 'data' .. '/colorscheme.json'
-local DEFAULT_THEME = 'tokyonight-night'
+local DEFAULT_THEME = 'onedark'
 
 local state = { theme = DEFAULT_THEME, transparent = false, accent = nil }
 
@@ -642,7 +668,15 @@ function M.apply(label, opts)
       return false
     end
   end
-  local ok = pcall(vim.cmd.colorscheme, theme.colorscheme)
+  local ok, err
+  if theme.load then
+    ok, err = pcall(theme.load)
+    -- `:colorscheme` normally fires ColorScheme; a custom loader must do it so
+    -- bufferline/lualine and the transparency/accent hooks refresh as usual.
+    if ok then vim.api.nvim_exec_autocmds('ColorScheme', {}) end
+  else
+    ok, err = pcall(vim.cmd.colorscheme, theme.colorscheme)
+  end
   if not ok then
     vim.notify(('colors: colorscheme %q not available (plugin not installed?)'):format(theme.colorscheme), vim.log.levels.WARN)
     return false
