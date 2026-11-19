@@ -38,17 +38,28 @@ local function get_selected_text()
   return text
 end
 
+---Ask for the replacement, then run the substitute. Prompting (instead of
+---pre-filling `:s/.../g`) means an accidental <CR> can never replace every
+---match with the literal "g" or delete them via an empty replacement.
+---@param word string
+---@param range string '%' for the file, or '<line>,<line>' for a selection
+local function prompt_replace(word, range)
+  vim.ui.input({ prompt = ('Replace "%s" with: '):format(word) }, function(input)
+    if not input or input == '' then return end
+    local pattern = '\\V\\<' .. vim.fn.escape(word, '/\\') .. '\\>'
+    local replacement = vim.fn.escape(input, '\\/&~|')
+    local ok, err = pcall(vim.cmd, range .. 's/' .. pattern .. '/' .. replacement .. '/g')
+    if not ok then vim.notify('Replace failed: ' .. err, vim.log.levels.ERROR) end
+  end)
+end
+
 local function replace_word()
   local word = vim.fn.expand '<cword>'
   if word == '' then
     vim.notify('No word under cursor', vim.log.levels.WARN)
     return
   end
-  -- Leave the :s on the cmdline (no <CR>) so the user types the replacement.
-  -- Executing it directly would DELETE every match: a trailing "/" with no
-  -- replacement is an empty replacement.
-  local cmd = ':%s/\\V\\<' .. vim.fn.escape(word, '/\\') .. '\\>/g'
-  vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes(cmd, true, false, true), 'n', true)
+  prompt_replace(word, '%')
 end
 
 vim.keymap.set('n', '<leader>rr', replace_word, { desc = '[R]eplace word under cursor (whole file)' })
@@ -57,6 +68,6 @@ vim.keymap.set('x', '<leader>rr', function()
   local word = get_selected_text()
   word = word:gsub('^%s+', ''):gsub('%s+$', '')
   if word == '' then return end
-  local cmd = "'<,'>s/\\V\\<" .. vim.fn.escape(word, '/\\') .. '\\>/g'
-  vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes(cmd, true, false, true), 'n', true)
+  local first, last = vim.fn.line("'<"), vim.fn.line "'>"
+  prompt_replace(word, first .. ',' .. last)
 end, { desc = '[R]eplace selection text' })

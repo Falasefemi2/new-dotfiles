@@ -54,8 +54,9 @@ local function ensure_dap()
       },
     },
   }
-  vim.api.nvim_set_hl(0, 'DapBreak', { fg = '#f38ba8' })
-  vim.api.nvim_set_hl(0, 'DapStop', { fg = '#f9e2af' })
+  -- Link instead of pinning colors so the debug signs follow the active theme.
+  vim.api.nvim_set_hl(0, 'DapBreak', { link = 'DiagnosticError' })
+  vim.api.nvim_set_hl(0, 'DapStop', { link = 'DiagnosticWarn' })
   local breakpoint_icons = vim.g.have_nerd_font
       and { Breakpoint = '', BreakpointCondition = '', BreakpointRejected = '', LogPoint = '', Stopped = '' }
     or { Breakpoint = '●', BreakpointCondition = '⊜', BreakpointRejected = '⊘', LogPoint = '◆', Stopped = '⭔' }
